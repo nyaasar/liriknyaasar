@@ -1,4 +1,4 @@
-var disqus_shortname="nyaasar";
+var disqus_shortname="liriknyaasar";
 var disqus_url = disqus_blogger_current_url;
 (function () {
  "use strict";
