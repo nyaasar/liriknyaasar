@@ -34,7 +34,7 @@ body {
 a {
 	color: var(--bru300);
 	text-decoration: none!important;
-	transition: 1s ease;
+	transition: all 0.3s ease;
 	}
 a:hover {
 	color: var(--mrh700);
@@ -51,20 +51,24 @@ h2 {
 	margin: 6rem;
 	}
 .container-atasan {
-	font-size: calc(1vmin - 1px);
+	
 	}
-.container-atasan .judul {
+#judul > h1 {
 	color: var(--mrh700)!important;
 	font-family: 'Potta One', cursive;
 	font-weight: 100;
+	font-size: calc(12vmin - 2px);
+	transition: all 0.3s ease;
 	}
-.container-atasan .keterangan {
+#judul > h2 {
 	color: var(--bru300);
 	font-family: 'Dosis', sans-serif;
 	font-weight: 400;
 	text-transform: lowercase;
+	font-size: calc(10vmin - 2px);
+	transition: all 0.3s ease;
 	}
-span.nyaa {
+.nyaa {
 	color: var(--pth200);
 	font-family: 'Noto Sans JP', sans-serif;
 	font-weight: 400;
@@ -72,7 +76,7 @@ span.nyaa {
 	font-size: 3rem;
 	display: inline-block;
 	}
-span.keluh {
+.keluh {
 	color: var(--pth200);
 	font-family: 'Noto Sans JP', sans-serif;
 	font-weight: 600;
