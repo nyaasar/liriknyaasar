@@ -11,7 +11,8 @@
 <link href='https://fonts.googleapis.com/css?family=Dosis:wght@200;300;400;500;600;700;800|Noto+Sans+JP|Potta+One|Roboto:wght@300;500;900;display=swap' rel='stylesheet'/>
 <link href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'/>
 
-<style>
+<b:skin><![CDATA[
+
 :root {
 --bru300:  #93c4ff;
 --mrh700:  #950000;
@@ -27,7 +28,8 @@
 --htm900:  #111213;
 --htm000:  #000000;
 }
-
+ ]]></b:skin>
+<style>
 body {
 	background: var(--htm900);
 	}
@@ -41,24 +43,22 @@ h2 {
 .atasan {
 	justify-content: center;
 	}
-div.container-atasan h1 {
+div.container-atasan .judul {
 	color: var(--mrh700);
 	font-family: &#39;Potta One&#39;, cursive;
-	font-size: 10em;
 	}
-div.container-atasan h2 {
+div.container-atasan .keterangan {
 	color: var(--bru300);
 	font-family: &#39;Noto Sans JP&#39;, sans-serif;
-	font-size: 10em;
 </style>
 
 </head>
 
 <body>
-<div class"atasan" id"atasan">
-	<div class"container-atasan" id"judul">
-		<h1 class "judul">Lirik Nyaasar</h1>
-		<h2 class "keterangan">Entah kapan selesainya</h2>
+<div class="atasan" id="atasan">
+	<div class="container-atasan" id="judul">
+		<h1 class="judul"><a href="https://liriknyaasar.blogspot.com/">Lirik Nyaasar</a></h1>
+		<h2 class="keterangan">Entah kapan selesainya</h2>
 	</div>
 </div>
 </body>
