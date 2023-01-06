@@ -11,8 +11,7 @@
 <link href='https://fonts.googleapis.com/css?family=Dosis:wght@200;300;400;500;600;700;800|Noto+Sans+JP|Potta+One|Roboto:wght@300;500;900;display=swap' rel='stylesheet'/>
 <link href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'/>
 
-<b:skin><![CDATA[
-
+<style>
 :root {
 --bru300:  #93c4ff;
 --mrh700:  #950000;
@@ -28,8 +27,7 @@
 --htm900:  #111213;
 --htm000:  #000000;
 }
- ]]></b:skin>
-<style>
+
 body {
 	background: var(--htm900);
 	}
@@ -39,17 +37,27 @@ h1 {
 h2 {
 	font-size: 8em;
 	}
-
 .atasan {
-	justify-content: center;
+	text-align: left;
 	}
-div.container-atasan .judul {
-	color: var(--mrh700);
-	font-family: &#39;Potta One&#39;, cursive;
+.contaier-atasan {
+	font-size: calc(3vmin + 5px);
 	}
-div.container-atasan .keterangan {
+.container-atasan .judul {
+	color: var(--mrh700)!important;
+	font-family: 'Potta One', cursive;
+	font-weight: 100;
+	}
+.container-atasan .keterangan {
 	color: var(--bru300);
-	font-family: &#39;Noto Sans JP&#39;, sans-serif;
+	font-family: 'Dosis', sans-serif;
+	font-weight: 400;
+	text-transform: lowercase;
+span .keterangan {
+	color: var(--pth200);
+	font-family: 'Noto Sans JP', sans-serif;
+	font-weight: 400;
+	text-align: center;
 </style>
 
 </head>
@@ -58,7 +66,8 @@ div.container-atasan .keterangan {
 <div class="atasan" id="atasan">
 	<div class="container-atasan" id="judul">
 		<h1 class="judul"><a href="https://liriknyaasar.blogspot.com/">Lirik Nyaasar</a></h1>
-		<h2 class="keterangan">Entah kapan selesainya</h2>
+		<h2 class="keterangan">kebahasaan yang rancu dan tidak tepat adalah jalan ninjaku</h2>
+		<span class="keterangan">みゃあ！</span>
 	</div>
 </div>
 </body>
