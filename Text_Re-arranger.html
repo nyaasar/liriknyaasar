@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Re-arranger</title>
+  <style>
+      /* Adding margins to the whole page */
+    body {
+      margin: 1.5em 10em 1.5em 10em;
+    }
+   /* Centering textareas using CSS Grid */
+    .textareas {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px; /* Adjust the gap between textareas as needed */
+      justify-items: center;
+      align-items: center;
+      margin: 20px auto;
+    }
+    textarea {
+      width: 100%;
+	  min-height: 300px;
+	  max-height: 400px;
+      box-sizing: border-box;
+	  resize: vertical; /* Make textareas resizable only vertically */
+    }
+    /* Centering and styling buttons */
+	.button-container {
+	  display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px; /* Adjust the gap between textareas as needed */
+      justify-items: center;
+      align-items: center;
+	  }
+    button {
+      display: block;
+      margin: 0 auto;
+      width: 200px; /* Adjust the width as needed */
+      height: 40px; /* Adjust the height as needed */
+    }
+    /* Hiding overflow in the result container */
+    /* Styling the result container */
+    .result-container {
+      margin-top: 10px; /* Add margin to separate result from textareas */
+      border: 1px solid #ccc; /* Add a border for visualization */
+      padding: 10px;
+	  min-height: 400px;
+      max-height: 800px; /* Set a maximum height for the result container */
+      overflow: auto; /* Add scrollbar when content overflows */
+	  resize: vertical; /* Make the result container resizable vertically */
+    }
+    .result {
+      margin-top: 10px; /* Add margin to separate result from textareas */
+      border: 1px solid #ccc; /* Add a border for visualization */
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Text Re-arranger</h1>
+  <div class="textareas">
+    <textarea id="text1" rows="5" placeholder="Enter text 1"></textarea>
+    <textarea id="text2" rows="5" placeholder="Enter text 2"></textarea>
+    <textarea id="text3" rows="5" placeholder="Enter text 3"></textarea>
+  </div>
+<div class="button-container">
+  <button onclick="rearrangeText()">Re-arrange</button>
+  <button onclick="clearText()">Clear All</button>
+  <button onclick="copyText()">Copy Output</button>
+</div>
+  <h2>Result:</h2>
+  <div class="result-container">
+    <div class="result" id="result"></div>
+  </div>
+
+<script>
+    // Load saved input from localStorage
+    document.getElementById('text1').value = localStorage.getItem('text1') || '';
+    document.getElementById('text2').value = localStorage.getItem('text2') || '';
+    document.getElementById('text3').value = localStorage.getItem('text3') || '';
+
+  function rearrangeText() {
+    const text1 = document.getElementById('text1').value;
+    const text2 = document.getElementById('text2').value;
+    const text3 = document.getElementById('text3').value;
+
+    // Split the text inputs into lines
+    const lines1 = text1.split('\n');
+    const lines2 = text2.split('\n');
+    const lines3 = text3.split('\n');
+
+    // Determine the number of input texts
+    const numInputTexts = (text1.trim() !== '' ? 1 : 0) + (text2.trim() !== '' ? 1 : 0) + (text3.trim() !== '' ? 1 : 0);
+
+    // Rearrange the lines according to the specified format
+    let rearrangedText = '';
+
+    for (let i = 0; i < Math.max(lines1.length, lines2.length, lines3.length); i++) {
+      if (i < lines1.length) rearrangedText += lines1[i] + '<br>';
+      if (i < lines2.length) {
+        rearrangedText += lines2[i] + '<br>';
+        if (numInputTexts === 2 && (i + 1) % 2 === 0) {
+          rearrangedText += '<br>';
+        }
+      }
+      if (i < lines3.length) {
+        rearrangedText += lines3[i] + '<br>';
+        if (numInputTexts === 3) {
+          rearrangedText += '<br>';
+        }
+      }
+    }
+
+    // Display the rearranged text with line breaks
+    document.getElementById('result').innerHTML = rearrangedText;
+        // Save input to localStorage
+      localStorage.setItem('text1', document.getElementById('text1').value);
+      localStorage.setItem('text2', document.getElementById('text2').value);
+      localStorage.setItem('text3', document.getElementById('text3').value);
+    }
+  function copyText() {
+      const resultElement = document.getElementById('result');
+      const range = document.createRange();
+      range.selectNode(resultElement);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+    }
+	    function clearText() {
+      document.getElementById('text1').value = '';
+      document.getElementById('text2').value = '';
+      document.getElementById('text3').value = '';
+      saveInputToLocalStorage();
+    }
+</script>
+
+
+
+
+
+</body>
+</html>
