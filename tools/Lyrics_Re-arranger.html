@@ -61,9 +61,9 @@
   <h1>Lyrics Re-arranger</h1>
   <h3>Created using ChatGPT, LMAO.</h3>
   <div class="textareas">
-    <textarea id="text1" rows="5" placeholder="Enter text 1"></textarea>
-    <textarea id="text2" rows="5" placeholder="Enter text 2"></textarea>
-    <textarea id="text3" rows="5" placeholder="Enter text 3"></textarea>
+    <textarea id="inputkanji" rows="5" placeholder="Enter kanji lyrics"></textarea>
+    <textarea id="inputromaji" rows="5" placeholder="Enter romaji lyrics"></textarea>
+    <textarea id="inputtranslation" rows="5" placeholder="Enter translated lyrics"></textarea>
   </div>
 <div class="button-container">
   <button onclick="rearrangeText()">Re-arrange</button>
@@ -77,22 +77,22 @@
 
 <script>
     // Load saved input from localStorage
-    document.getElementById('text1').value = localStorage.getItem('text1') || '';
-    document.getElementById('text2').value = localStorage.getItem('text2') || '';
-    document.getElementById('text3').value = localStorage.getItem('text3') || '';
+    document.getElementById('inputkanji').value = localStorage.getItem('inputkanji') || '';
+    document.getElementById('inputromaji').value = localStorage.getItem('inputromaji') || '';
+    document.getElementById('inputtranslation').value = localStorage.getItem('inputtranslation') || '';
 
   function rearrangeText() {
-    const text1 = document.getElementById('text1').value;
-    const text2 = document.getElementById('text2').value;
-    const text3 = document.getElementById('text3').value;
+    const inputkanji = document.getElementById('inputkanji').value;
+    const inputromaji = document.getElementById('inputromaji').value;
+    const inputtranslation = document.getElementById('inputtranslation').value;
 
     // Split the text inputs into lines
-    const lines1 = text1.split('\n');
-    const lines2 = text2.split('\n');
-    const lines3 = text3.split('\n');
+    const lines1 = inputkanji.split('\n');
+    const lines2 = inputromaji.split('\n');
+    const lines3 = inputtranslation.split('\n');
 
     // Determine the number of input texts
-    const numInputTexts = (text1.trim() !== '' ? 1 : 0) + (text2.trim() !== '' ? 1 : 0) + (text3.trim() !== '' ? 1 : 0);
+    const numInputTexts = (inputkanji.trim() !== '' ? 1 : 0) + (inputromaji.trim() !== '' ? 1 : 0) + (inputtranslation.trim() !== '' ? 1 : 0);
 
     // Rearrange the lines according to the specified format
     let rearrangedText = '';
@@ -116,9 +116,9 @@
     // Display the rearranged text with line breaks
     document.getElementById('result').innerHTML = rearrangedText;
         // Save input to localStorage
-      localStorage.setItem('text1', document.getElementById('text1').value);
-      localStorage.setItem('text2', document.getElementById('text2').value);
-      localStorage.setItem('text3', document.getElementById('text3').value);
+      localStorage.setItem('inputkanji', document.getElementById('inputkanji').value);
+      localStorage.setItem('inputromaji', document.getElementById('inputromaji').value);
+      localStorage.setItem('inputtranslation', document.getElementById('inputtranslation').value);
     }
   function copyText() {
       const resultElement = document.getElementById('result');
@@ -130,10 +130,13 @@
       window.getSelection().removeAllRanges();
     }
 	    function clearText() {
-      document.getElementById('text1').value = '';
-      document.getElementById('text2').value = '';
-      document.getElementById('text3').value = '';
-      saveInputToLocalStorage();
+      document.getElementById('inputkanji').value = '';
+      document.getElementById('inputromaji').value = '';
+      document.getElementById('inputtranslation').value = '';
+        // Clear the data from local storage
+      localStorage.removeItem('inputkanji');
+      localStorage.removeItem('inputromaji');
+      localStorage.removeItem('inputtranslation');
     }
 </script>
 </body>
