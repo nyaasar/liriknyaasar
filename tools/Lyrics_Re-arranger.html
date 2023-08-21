@@ -55,8 +55,13 @@
       border: 1px solid #ccc; /* Add a border for visualization */
       padding: 10px;
     }
-    @media (max-width: 768px) {
   /* Mobile-specific adjustments */
+    @media (max-width: 1024px) {
+	  button {
+      width: 120px;
+    }
+}
+    @media (max-width: 768px) {
   body {
     margin: 1.5em 1em;
   }
@@ -67,20 +72,18 @@
   }
   textarea {
 	  min-height: 200px;
+	  max-height: 200px;
 	  }
   .button-container {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  
+  button {
+      width: 200px;
+    }
   .result-container {
     min-height: 200px;
     max-height: none;
-  }
-  
-  /* Additional mobile-specific styles */
-  .mobile-font-size {
-    font-size: 14px; /* Adjust as needed for mobile */
   }
 }
   </style>
