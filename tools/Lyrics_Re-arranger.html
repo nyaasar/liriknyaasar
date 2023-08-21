@@ -55,6 +55,34 @@
       border: 1px solid #ccc; /* Add a border for visualization */
       padding: 10px;
     }
+    @media (max-width: 768px) {
+  /* Mobile-specific adjustments */
+  body {
+    margin: 1.5em 1em;
+  }
+  
+  .textareas {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  textarea {
+	  min-height: 200px;
+	  }
+  .button-container {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .result-container {
+    min-height: 200px;
+    max-height: none;
+  }
+  
+  /* Additional mobile-specific styles */
+  .mobile-font-size {
+    font-size: 14px; /* Adjust as needed for mobile */
+  }
+}
   </style>
 </head>
 <body>
