@@ -1147,7 +1147,7 @@ urlactivepage=location.href,home_page="/";function looppagecurrentg(e){var a="";
   </b:defaultmarkups>
   
 </head>
-<body>
+<body class='tubuh'>
 
 <!--Stempel<div class='stempel' mobile='no'><span>
 NO ADS
@@ -1156,11 +1156,11 @@ Silakan gunakan AdBlock.
 </span></div>-->
 <!--Header--><div class='kepala'>
 <b:section class='siteheadersec' id='siteheadersec' maxwidgets='1' showaddelement='no'>
-  <b:widget id='Header1' locked='false' title='d-----a (Header)' type='Header' version='1'>
+  <b:widget id='Header1' locked='false' title='Lirik Nyaasar (Header)' type='Header' version='1'>
     <b:widget-settings>
       <b:widget-setting name='displayUrl'/>
       <b:widget-setting name='displayHeight'>0</b:widget-setting>
-      <b:widget-setting name='sectionWidth'>-1</b:widget-setting>
+      <b:widget-setting name='sectionWidth'>150</b:widget-setting>
       <b:widget-setting name='useImage'>false</b:widget-setting>
       <b:widget-setting name='shrinkToFit'>false</b:widget-setting>
       <b:widget-setting name='imagePlacement'>BEHIND</b:widget-setting>
@@ -1323,7 +1323,7 @@ toggle.onclick = function() {
 
 </b:includable>
     </b:widget>
-    <b:widget cond='data:view.isPost' id='Text2' locked='false' title='Article Anouncement' type='Text' version='2' visible='true'>
+    <b:widget cond='data:view.isPost' id='Text2' locked='false' title='Article Anouncement' type='Text' version='1'>
       <b:widget-settings>
         <b:widget-setting name='content'><![CDATA[<div style="font-family: 'Noto Sans JP',sans-serif; text-align: center;"><br /><div style="font-size: 1.1rem; font-weight: 800;"><b>PERHATIAN!</b></div>Silakan jika kalian ingin menggunakan terjemahan saya, tapi minimal kasih sumber, lah.<br /><br />各ページに掲載されたジャケット画像と日本語の漢字歌詞の著作権は、それぞれのレコード会社とアーティストに帰属します。<br />このブログに掲載されている全ての歌詞は宣伝目的です。私はDMCAに違反するつもりはありませんので、許してください。<br /><br /></div>]]></b:widget-setting>
       </b:widget-settings>
@@ -1338,30 +1338,32 @@ toggle.onclick = function() {
 </header>
 				<!--main--><main class='normalisasi-w cbdb'>
   <b:section class='seksi-halut2' id='main' showaddelement='true'>
-    <b:widget id='Blog1' locked='false' title='Blog Posts' type='Blog' version='2' visible='true'>
+    <b:widget id='Blog1' locked='false' title='Postingan Blog' type='Blog' version='2' visible='true'>
       <b:widget-settings>
-        <b:widget-setting name='showDateHeader'>false</b:widget-setting>
         <b:widget-setting name='commentLabel'>Komentar</b:widget-setting>
-        <b:widget-setting name='style.textcolor'>#ffffff</b:widget-setting>
         <b:widget-setting name='showShareButtons'>false</b:widget-setting>
         <b:widget-setting name='authorLabel'>Oleh</b:widget-setting>
-        <b:widget-setting name='showCommentLink'>true</b:widget-setting>
-        <b:widget-setting name='style.urlcolor'>#ffffff</b:widget-setting>
-        <b:widget-setting name='showAuthor'>false</b:widget-setting>
-        <b:widget-setting name='style.linkcolor'>#ffffff</b:widget-setting>
         <b:widget-setting name='style.unittype'>TextAndImage</b:widget-setting>
-        <b:widget-setting name='style.bgcolor'>#ffffff</b:widget-setting>
         <b:widget-setting name='timestampLabel'>Pada</b:widget-setting>
         <b:widget-setting name='reactionsLabel'/>
         <b:widget-setting name='showAuthorProfile'>true</b:widget-setting>
         <b:widget-setting name='style.layout'>1x1</b:widget-setting>
-        <b:widget-setting name='showLabels'>true</b:widget-setting>
         <b:widget-setting name='showLocation'>false</b:widget-setting>
-        <b:widget-setting name='postLabelsLabel'/>
         <b:widget-setting name='showTimestamp'>true</b:widget-setting>
         <b:widget-setting name='postsPerAd'>1</b:widget-setting>
-        <b:widget-setting name='showBacklinks'>false</b:widget-setting>
         <b:widget-setting name='style.bordercolor'>#ffffff</b:widget-setting>
+        <b:widget-setting name='backlinksLabel'/>
+        <b:widget-setting name='showDateHeader'>false</b:widget-setting>
+        <b:widget-setting name='style.textcolor'>#ffffff</b:widget-setting>
+        <b:widget-setting name='showCommentLink'>true</b:widget-setting>
+        <b:widget-setting name='style.urlcolor'>#ffffff</b:widget-setting>
+        <b:widget-setting name='postLocationLabel'>Location:</b:widget-setting>
+        <b:widget-setting name='showAuthor'>false</b:widget-setting>
+        <b:widget-setting name='style.linkcolor'>#ffffff</b:widget-setting>
+        <b:widget-setting name='style.bgcolor'>#ffffff</b:widget-setting>
+        <b:widget-setting name='showLabels'>true</b:widget-setting>
+        <b:widget-setting name='postLabelsLabel'/>
+        <b:widget-setting name='showBacklinks'>false</b:widget-setting>
         <b:widget-setting name='showInlineAds'>false</b:widget-setting>
         <b:widget-setting name='showReactions'>false</b:widget-setting>
       </b:widget-settings>
