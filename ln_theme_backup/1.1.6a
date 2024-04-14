@@ -46,6 +46,7 @@
 	<!-- Other -->
 	<meta expr:charset='data:blog.encoding'/>
 	<link expr:href='data:view.url.canonical' rel='canonical'/>
+    <link expr:href='data:blog.url.canonical' hreflang='x-default' rel='alternate'/>
 	<link expr:href='data:blog.blogspotFaviconUrl' rel='icon' type='image/x-icon'/>
 	<meta content='width=device-width,initial-scale=1' name='viewport'/>
 	<b:include data='blog' name='google-analytics'/>
@@ -2643,7 +2644,7 @@ BLOG_CMT_createIframe(&quot;<data:post.appRpcRelayPath/>&quot;, &quot;<data:post
   				<div><p style='font-size: calc(1.6vmin + 1px);'>各ページに掲載されたジャケット画像と日本語の漢字歌詞の著作権は&#12289;それぞれのレコード会社とアーティストに帰属します&#12290;<br/>このブログに掲載されている全ての歌詞は宣伝目的です&#12290;私はDMCAに違反するつもりはありませんので&#12289;許してください&#12290;</p>Lirik <i>Terjemahan Indonesia</i> Nyaasar &#169; 2019 &#8212;
 					<script>document.write(new Date().getFullYear())</script> <a expr:href='data:blog.homepageUrl'><data:blog.title/></a>. Some rights reserved.
   				<div><a expr:href='data:blog.homepageUrl'><data:blog.title/></a> Theme based on <a href='https://demo-lucid-lime.blogspot.com/'>Lucid Lime</a> 2.4.b by <a href='https://emissionhex.blogspot.com'><span>EmissionHex</span></a></div>
-  				<div>Modified by <a href='https://liriknyaasar.blogspot.com/p/tentang.html'><span class='devel'>nyaasar</span></a>: 1.1.6a</div>
+  				<div>Modified by <a href='https://liriknyaasar.blogspot.com/p/tentang.html'><span class='devel'>nyaasar</span></a>: 1.1.6a3</div>
   			</div>	
       	<!--<div class='fstyle-1d3'><i>Licentia Poetica</i></div>-->
 	</div>
@@ -2689,19 +2690,6 @@ function scrollToTop() {
 //]]>
 </script>
 <!--jQuerry Tab -DTE--><script src='https://cdn.jsdelivr.net/gh/nyaasar/liriknyaasar/jscripts/jquerytab-dte.js'/>
-<!--Unlimited Page - Arlina<b:if cond='data:blog.pageType == &quot;index&quot;'>
-<script>
-/*<![CDATA[*/
-var postperpage=10;
-var numshowpage=5;
-var upPageWord ='&#10094';
-var downPageWord ='&#10095';
-var urlactivepage=location.href;
-var home_page="/";
-/*]]>*/
-</script>
-<script src='https://cdn.jsdelivr.net/gh/nyaasar/liriknyaasar/jscripts/unlimitedpages-arlina.js'/>
-</b:if>-->
 <!--Label ShowAll--><script>
 //<![CDATA[
 // Show all label
@@ -2795,4 +2783,4 @@ $(document).ready(function(){
 	</script>
 
   </body>
-  </html>
+  </html><!--Paginasi, rekomendasi bergantung pada Post Feeds-->
