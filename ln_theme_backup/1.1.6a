@@ -1,66 +1,40 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html>
-<html b:css='false' b:defaultwidgetversion='2' b:js='true' b:layoutsVersion='3' b:responsive='true' expr:dir='data:blog.languageDirection' expr:lang='data:blog.locale' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
-  <head>
-
-    <!-- Primary Meta Tags -->
-    <title>
-      <b:if cond='data:view.isHomepage'>Beranda <data:view.title.escaped/>
-      <b:elseif cond='data:view.isPost'/>Lirik <data:view.title.escaped/> | Terjemahan <data:blog.title/>
-      <b:elseif cond='data:view.isPage'/>Laman <data:view.title.escaped/> | <data:blog.title/>
-      <b:elseif cond='data:view.isLabelSearch'/>Label <data:blog.pageName/> | <data:blog.title/>
-      <b:elseif cond='data:view.isArchive'/>Arsip <data:blog.pageName/> | <data:blog.title/>
-      <b:elseif cond='data:blog.searchQuery'/><data:blog.pageName/> | <data:blog.title/>
-      <b:elseif cond='data:view.isError'/>Galat 404
-      </b:if>
-    </title>
-	<meta expr:content='data:view.title.escaped' name='title'/>
-	<meta expr:content='data:blog.metaDescription' name='description'/>
-	<link href='https://fonts.googleapis.com/css?family=Dosis:wght@400;500;600;700;800|Noto+Sans+JP:wght@400;500;700;900|Potta+One|;display=swap' rel='stylesheet'/>
-	<link href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'/>
-	<meta content='Lk_gUuPisyHoIyUy_hdZ4xB4cCNjFv4czlNYF3Uzjro' name='google-site-verification'/>
-	<meta content='&quot;lirik, lagu, jepang, anime, doujin, terjemahan, indonesia, &quot; + data:blog.pageName' name='keywords'/>
+<HTML b:css='false' b:js='true' b:responsive='true' expr:dir='data:blog.languageDirection'>
+&lt;head&gt;
   
-	<!-- Open Graph / Facebook -->
-	<meta content='website' property='og:type'/>
-	<meta expr:content='data:view.url.canonical' property='og:url'/>
-	<meta expr:content='data:view.title' property='og:title'/>
-    <meta expr:content='data:view.description.escaped' property='og:description'/>
-    <b:if cond='data:widgets'>
-	<b:loop values='data:widgets.Blog.first.posts where (p =&gt; p.featuredImage) map (p =&gt; p.featuredImage)' var='imageUrl'>
-	<meta expr:content='resizeImage(data:imageUrl,1200,&quot;1200:630&quot;)' property='og:image'/>
-   	</b:loop>
-	</b:if>
+<title>
+<b:switch var='data:blog.pageType'>
+<b:case value='index'/>
+Lirik <data:view.title.escaped/> | Terjemahan <data:blog.title/>
+<b:case value='item'/>
+Lirik <data:view.title.escaped/> | Terjemahan <data:blog.title/>
+<b:case value='static_page'/>
+<data:view.title.escaped/> | Terjemahan <data:blog.title/>
+<b:case value='archive'/>
+<data:view.title.escaped/> - <data:messages.blogArchive/> | <data:blog.pageName/>
+<b:case value='error_page'/>
+Page 404 - <data:view.title.escaped/>
+</b:switch>
+</title>
+<meta expr:charset='data:blog.encoding'/>
+<meta expr:content='data:view.description.escaped' name='description'/>
+<link href='https://fonts.googleapis.com/css?family=Dosis:wght@400;500;600;700;800|Noto+Sans+JP:wght@400;500;700;900|Potta+One|;display=swap' rel='stylesheet'/>
+<meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes, minimal-ui' name='viewport'/>
+
+<meta content='Lirik Lagu Jepang, Anime, Terjemahan Indonesia' name='keywords'/>
+<meta content='lirik, terjemahan, indonesia, lagu, jepang, anime,lirik terjemahan, lirik indonesia, terjemahan indonesia' property='article:tag'/> 
+
+<link expr:href='data:view.url.canonical' rel='canonical'/>
+<link expr:href='data:blog.url.canonical' hreflang='x-default' rel='alternate'/>
+<meta expr:content='data:blog.url.canonical' property='og:url'/>
   
-  	<!-- Twitter -->
-	<meta content='summary_large_image' property='twitter:card'/>
-	<meta expr:content='data:view.url.canonical' property='twitter:url'/>
-	<meta expr:content='data:view.title' property='twitter:title'/>
-	<meta expr:content='data:view.description.escaped' property='twitter:description'/>
-    <b:if cond='data:widgets'>
-	<b:loop values='data:widgets.Blog.first.posts where (p =&gt; p.featuredImage) map (p =&gt; p.featuredImage)' var='imageUrl'>
-	<meta expr:content='resizeImage(data:imageUrl,1200,&quot;1200:630&quot;)' property='twitter:image'/>
-   	</b:loop>
-	</b:if>
-    
-	<!-- Other -->
-	<meta expr:charset='data:blog.encoding'/>
-	<link expr:href='data:view.url.canonical' rel='canonical'/>
-	<link expr:href='data:blog.blogspotFaviconUrl' rel='icon' type='image/x-icon'/>
-	<meta content='width=device-width,initial-scale=1' name='viewport'/>
-	<b:include data='blog' name='google-analytics'/>
-    <b:if cond='data:blog.adultContent'><meta content='adult' name='rating'/></b:if>
-    <data:blog.feedLinks/>
-    <data:blog.meTag/>
-    
-    <b:if cond='data:view.isHomepage'>
-        <script type='application/ld+json'>{&quot;@context&quot;:&quot;http://schema.org&quot;,&quot;@type&quot;:&quot;WebSite&quot;,&quot;name&quot;:&quot;<data:view.title.escaped/>&quot;,&quot;url&quot;:&quot;<data:view.url.canonical/>&quot;,&quot;potentialAction&quot;:{&quot;@type&quot;:&quot;SearchAction&quot;,&quot;target&quot;:&quot;<data:view.url.canonical/>search?q={search_term_string}&quot;,&quot;query-input&quot;:&quot;required name=search_term_string&quot;}}</script>
-      </b:if>
-    
+<meta content='Lirik Nyaasar' name='author'/>
+<meta content='Lirik Nyaasar' property='article:author'/>
 
-<script src='https://code.jquery.com/jquery-3.7.1.js'/>
-<script src='https://code.jquery.com/jquery-migrate-3.4.1.js'/>
+<link expr:href='data:blog.blogspotFaviconUrl' rel='icon' type='image/x-icon'/>
 
+<link href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'/>
 <b:skin><![CDATA[ 
 /*!************************************************
 * Name		: Lucid Lime
@@ -1015,6 +989,8 @@ input[id^=&quot;spoiler&quot;]:checked + label + .spoiler{
 .btncurrent{padding:5px 10px 10px;background:#464646;color:white;}
 </style>
 
+<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js'/><!--jQuery Library-->
+
 <b:if cond='data:blog.pageType != &quot;item&quot;'>
 	<b:if cond='data:blog.pageType != &quot;static_page&quot;'>
 		<style>
@@ -1146,8 +1122,8 @@ urlactivepage=location.href,home_page="/";function looppagecurrentg(e){var a="";
     </b:defaultmarkup>
   </b:defaultmarkups>
   
-</head>
-<body>
+  &lt;/head&gt;&lt;!--<head/>--&gt;
+&lt;body class=&#39;tubuh&#39; id=&#39;modeSwitch&#39;&gt;
 
 <!--Stempel<div class='stempel' mobile='no'><span>
 NO ADS
@@ -1160,7 +1136,7 @@ Silakan gunakan AdBlock.
     <b:widget-settings>
       <b:widget-setting name='displayUrl'/>
       <b:widget-setting name='displayHeight'>0</b:widget-setting>
-      <b:widget-setting name='sectionWidth'>1613</b:widget-setting>
+      <b:widget-setting name='sectionWidth'>-1</b:widget-setting>
       <b:widget-setting name='useImage'>false</b:widget-setting>
       <b:widget-setting name='shrinkToFit'>false</b:widget-setting>
       <b:widget-setting name='imagePlacement'>BEHIND</b:widget-setting>
@@ -1314,7 +1290,22 @@ toggle.onclick = function() {
     </b:widget>
     <b:widget cond='data:view.isHomepage' id='Text1' locked='false' title='Homepage Anouncement' type='Text' version='2' visible='true'>
       <b:widget-settings>
-        <b:widget-setting name='content'><![CDATA[<div style="font-family: 'Noto Sans JP', sans-serif; text-align: center;"><br /><div style="font-size: 1.1rem; font-weight: 800;"><b>PERHATIAN!</b></div><div>Lirik Nyaasar adalah proyek <b>nirlaba</b> yang menyalurkan hobi saya dalam penerjemahan lirik lagu jejepangan.<br/>Saya memang sengaja <b>tidak memasang iklan</b> di blog ini. Jika masih ragu, silakan gunakan pemblokir iklan pilihan kalian.<br /><br /><b>Silakan jika kalian ingin menggunakan terjemahan saya, tapi minimal kasih sumber, lah.</b><br /><br />各ページに掲載されたジャケット画像と日本語の漢字歌詞の著作権は、それぞれのレコード会社とアーティストに帰属します。<br />このブログに掲載されている全ての歌詞は宣伝目的です。私はDMCAに違反するつもりはありませんので、許してください。<br /><br /></div></div>]]></b:widget-setting>
+        <b:widget-setting name='content'><![CDATA[<div style="font-family: 'Noto Sans JP', sans-serif; text-align: center;">
+  <br />
+  <div style="font-size: 1.1rem; font-weight: 800;">
+    <b>PERHATIAN!</b>
+  </div>
+  <div>
+    Lirik Nyaasar adalah proyek <b>nirlaba</b> yang menyalurkan hobi saya dalam penerjemahan lirik lagu jejepangan.<br/>
+    Saya memang sengaja <b>tidak memasang iklan</b> di blog ini. Jika masih ragu, silakan gunakan pemblokir iklan pilihan kalian.<br />
+    Silakan jika kalian ingin menggunakan terjemahan saya, asalkan kasih sumber, lah.<br />
+    <br />
+    各ページに掲載されたジャケット画像と日本語の漢字歌詞の著作権は、それぞれのレコード会社とアーティストに帰属します。<br />
+    このブログに掲載されている全ての歌詞は宣伝目的です。私はDMCAに違反するつもりはありませんので、許してください。<br />
+    <br />
+  </div>
+</div>
+]]></b:widget-setting>
       </b:widget-settings>
       <b:includable id='main'>
         <b:class name='pengumuman-utama'/>
@@ -1323,9 +1314,9 @@ toggle.onclick = function() {
 
 </b:includable>
     </b:widget>
-    <b:widget cond='data:view.isPost' id='Text2' locked='false' title='Article Anouncement' type='Text' version='1'>
+    <b:widget cond='data:post.labels any (l =&gt; l.name == &quot;#SingableIDN&quot;)' id='Text2' locked='false' title='Article Anouncement' type='Text' version='1'>
       <b:widget-settings>
-        <b:widget-setting name='content'><![CDATA[<div style="font-family: 'Noto Sans JP',sans-serif; text-align: center;"><br /><div style="font-size: 1.1rem; font-weight: 800;"><b>PERHATIAN!</b></div>Silakan jika kalian ingin menggunakan terjemahan saya, tapi minimal kasih sumber, lah.<br /><br />各ページに掲載されたジャケット画像と日本語の漢字歌詞の著作権は、それぞれのレコード会社とアーティストに帰属します。<br />このブログに掲載されている全ての歌詞は宣伝目的です。私はDMCAに違反するつもりはありませんので、許してください。<br /><br /></div>]]></b:widget-setting>
+        <b:widget-setting name='content'><![CDATA[<div style="font-family: 'Noto Sans JP',sans-serif; text-align: center;"><br /><div style="font-size: 1.1rem; font-weight: 800;"><b>PERHATIAN!</b></div>Lirik berlabel hijau "singable" dapat dinyanyikan ala kadarnya, <br />masih tetap perlu sentuhan profesional agar lirik ini benar-benar nyaman dinyanyikan.<br /><br /></div>]]></b:widget-setting>
       </b:widget-settings>
       <b:includable id='main'>
         <b:class name='pengumuman-utama'/>
@@ -2509,7 +2500,7 @@ BLOG_CMT_createIframe(&quot;<data:post.appRpcRelayPath/>&quot;, &quot;<data:post
       <b:widget-settings>
         <b:widget-setting name='sorting'>ALPHA</b:widget-setting>
         <b:widget-setting name='display'>CLOUD</b:widget-setting>
-        <b:widget-setting name='selectedLabelsList'/>
+        <b:widget-setting name='selectedLabelsList'>Action,Adventure,Comedy,Drama,Ecchi,Fantasy,Game,Harem,Horror,Hunter No Sekai,Isekai,Light Novel,Manga,Mecha,Military,Movie,Music,Mystery,Original,Parody,Psychological,Romance,School,Sci-Fi,Seinen,Slice of Life,Sport,Supernatural,Thriller,Video Game,Visual Novel</b:widget-setting>
         <b:widget-setting name='showType'>ALL</b:widget-setting>
         <b:widget-setting name='showFreqNumbers'>true</b:widget-setting>
       </b:widget-settings>
@@ -2643,7 +2634,7 @@ BLOG_CMT_createIframe(&quot;<data:post.appRpcRelayPath/>&quot;, &quot;<data:post
   				<div><p style='font-size: calc(1.6vmin + 1px);'>各ページに掲載されたジャケット画像と日本語の漢字歌詞の著作権は&#12289;それぞれのレコード会社とアーティストに帰属します&#12290;<br/>このブログに掲載されている全ての歌詞は宣伝目的です&#12290;私はDMCAに違反するつもりはありませんので&#12289;許してください&#12290;</p>Lirik <i>Terjemahan Indonesia</i> Nyaasar &#169; 2019 &#8212;
 					<script>document.write(new Date().getFullYear())</script> <a expr:href='data:blog.homepageUrl'><data:blog.title/></a>. Some rights reserved.
   				<div><a expr:href='data:blog.homepageUrl'><data:blog.title/></a> Theme based on <a href='https://demo-lucid-lime.blogspot.com/'>Lucid Lime</a> 2.4.b by <a href='https://emissionhex.blogspot.com'><span>EmissionHex</span></a></div>
-  				<div>Modified by <a href='https://liriknyaasar.blogspot.com/p/tentang.html'><span class='devel'>nyaasar</span></a>: 1.1.6a</div>
+  				<div>Modified by <a href='https://liriknyaasar.blogspot.com/p/tentang.html'><span class='devel'>nyaasar</span></a>: 1.1.5</div>
   			</div>	
       	<!--<div class='fstyle-1d3'><i>Licentia Poetica</i></div>-->
 	</div>
@@ -2794,5 +2785,5 @@ $(document).ready(function(){
 
 	</script>
 
-  </body>
-  </html>
+  &lt;/body&gt;&lt;!--<body/>--&gt;
+  </HTML>
