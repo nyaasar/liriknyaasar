@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice DMT Final Sejajar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>body{font-family:Arial;background:#f2f2f2;padding:10px}.wrap{max-width:600px;margin:auto;background:#fff;border-radius:12px;padding:14px}label{font-size:12px;font-weight:bold;display:block;margin-top:10px}input,textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid #ddd;border-radius:8px;margin-top:4px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.item{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;margin-top:10px}.btn{padding:10px;border:none;border-radius:10px;font-weight:bold}.btnAdd{background:#111;color:#fff;width:100%;margin-top:10px}.btnDel{background:#ffebee;color:#d32f2f}.btnPDF{background:#2962ff;color:#fff;width:100%;padding:16px;font-size:16px;margin-top:14px}.small{font-size:11px;color:#888;text-align:center;margin-top:6px}</style>
+</head>
+<body>
+<div class="wrap">
+<h2 style="text-align:center">🧾 Invoice Delta Multi Teknik</h2>
+<label>Upload Logo Clean</label><input type="file" id="logoInput" accept="image/*">
+<img id="logoPrev" style="max-width:220px;display:none;margin-top:6px;border:1px dashed #ccc;padding:4px;border-radius:6px">
+<div class="grid2"><div><label>Invoice No</label><input id="invNo" value="INS/DMT929"></div><div><label>Create Date</label><input id="creatDate" type="date"></div></div>
+<div class="grid2"><div><label>Due Date</label><input id="dueDate" type="date"></div><div><label>Pembayaran</label><input id="payMethod" value="CASH / TF BCA 0181714947 a/n ARISTIG FARANDY K."></div></div>
+<label>BILL TO</label><input id="billName" value="Pak Nandar"><textarea id="billAddr">Villa Jasmine 3 blok B6/01, Kec.Suko</textarea><input id="billPhone" value="+6281357596317">
+<div id="items"></div><button class="btn btnAdd" type="button" id="btnAdd">+ Tambah Item</button>
+<label>Terms</label><textarea id="terms" rows="5">*Garansi 6 bulan meliputi unit Wifi kamera Ezviz H6C
+*Garansi batal jika rusak akibat kesalahan pemakaian, bencana alam dan segel rusak
+*Proses klaim garansi melalui pemeriksaan Teknisi Vendor</textarea>
+<button class="btn btnPDF" type="button" id="btnPDF">📄 Generate PDF</button>
+<div class="small" id="saveInfo">Auto-save aktif</div>
+</div>
+<script>
+const KEY='dmt_final_sejajar_v6';
+let logoDataUrl=null;
+let items = [{desc:'EZVIZ H6C 3MP',qty:2,price:330000},{desc:'MicroSD 64GB',qty:2,price:80000}];
+
+function saveAll(){
+ let data={invNo:invNo.value,creatDate:creatDate.value,dueDate:dueDate.value,payMethod:payMethod.value,billName:billName.value,billAddr:billAddr.value,billPhone:billPhone.value,terms:terms.value,items:items,logo:logoDataUrl};
+ try{localStorage.setItem(KEY,JSON.stringify(data)); saveInfo.textContent='Tersimpan '+new Date().toLocaleTimeString();}catch(e){}
+}
+function loadAll(){
+ let raw=localStorage.getItem(KEY); if(!raw) return;
+ try{let d=JSON.parse(raw); invNo.value=d.invNo||invNo.value; creatDate.value=d.creatDate||creatDate.value; dueDate.value=d.dueDate||dueDate.value; payMethod.value=d.payMethod||payMethod.value; billName.value=d.billName||billName.value; billAddr.value=d.billAddr||billAddr.value; billPhone.value=d.billPhone||billPhone.value; terms.value=d.terms||terms.value; if(d.items) items=d.items; if(d.logo){logoDataUrl=d.logo; logoPrev.src=logoDataUrl; logoPrev.style.display='block';}}catch(e){}
+}
+if(!creatDate.value) creatDate.valueAsDate=new Date();
+if(!dueDate.value){let d=new Date(); d.setDate(d.getDate()+1); dueDate.valueAsDate=d;}
+
+logoInput.addEventListener('change', e=>{
+ let f=e.target.files[0]; if(!f) return;
+ let r=new FileReader(); r.onload=ev=>{logoDataUrl=ev.target.result; logoPrev.src=logoDataUrl; logoPrev.style.display='block'; saveAll();}; r.readAsDataURL(f);
+});
+
+function renderItems(){
+ let cont=document.getElementById('items'); cont.innerHTML='';
+ items.forEach((it,i)=>{
+  let div=document.createElement('div'); div.className='item';
+  div.innerHTML=`<div style="display:flex;justify-content:space-between"><b>Item ${i+1}</b><button class="btn btnDel" type="button" data-del="${i}">Hapus</button></div><label>Deskripsi</label><input data-i="${i}" data-k="desc" value="${it.desc.replace(/"/g,'&quot;')}"><div class="grid2"><div><label>QTY</label><input type="number" data-i="${i}" data-k="qty" value="${it.qty}"></div><div><label>Harga</label><input type="number" data-i="${i}" data-k="price" value="${it.price}"></div></div>`;
+  cont.appendChild(div);
+ });
+ cont.querySelectorAll('input').forEach(inp=>{ inp.addEventListener('input', e=>{ let i=parseInt(e.target.dataset.i); let k=e.target.dataset.k; let v=e.target.value; if(k!=='desc') v=parseFloat(v)||0; items[i][k]=v; saveAll(); }); });
+ cont.querySelectorAll('[data-del]').forEach(b=>{ b.addEventListener('click', e=>{ items.splice(parseInt(e.target.dataset.del),1); renderItems(); saveAll(); }); });
+}
+document.getElementById('btnAdd').addEventListener('click', ()=>{ items.push({desc:'',qty:1,price:0}); renderItems(); saveAll(); });
+function formatTgl(iso){if(!iso)return'-';let d=new Date(iso);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+
+document.getElementById('btnPDF').addEventListener('click', ()=>{
+ const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'pt',format:'a4'}); const W=doc.internal.pageSize.getWidth();
+ if(logoDataUrl){try{doc.addImage(logoDataUrl,'PNG',30,12,190,58);}catch(e){try{doc.addImage(logoDataUrl,'JPEG',30,12,190,58);}catch(e2){}}}
+ doc.setFontSize(9); doc.text('INVOICE NO.: '+invNo.value,W-180,32); doc.text('CRE. DATE: '+formatTgl(creatDate.value),W-180,46); doc.text('DUE DATE: '+formatTgl(dueDate.value),W-180,60);
+ doc.setFont('helvetica','bold');doc.text('FROM:',32,95);doc.setFont('helvetica','normal');let fy=110;['Delta Multi Teknik - CCTV, Networking & Air Conditioner Solution','Jl. Wortel No.7 Tanggulangin, Sidoarjo','0857-0260-7096','admin@deltamulticctv.com'].forEach(l=>{doc.text(l,32,fy);fy+=12;});
+ doc.setFont('helvetica','bold');doc.text('BILL TO:',W-180,95);doc.setFont('helvetica','normal');let by=110;doc.text(billName.value,W-180,by);by+=12;let addr=doc.splitTextToSize(billAddr.value,160);doc.text(addr,W-180,by);by+=addr.length*12;doc.text(billPhone.value,W-180,by);
+ let body=items.filter(it=>it.desc).map(it=>[it.desc,it.qty.toString(),it.price.toLocaleString('id-ID'),'Rp.'+ (it.qty*it.price).toLocaleString('id-ID')]);
+ let total=items.reduce((s,it)=>s+it.qty*it.price,0);
+ doc.autoTable({startY:155,head:[['DESCRIPTION','QTY','PRICE','AMOUNT']],body:body,foot:[['','','TOTAL','Rp.'+total.toLocaleString('id-ID')]],theme:'plain',styles:{fontSize:9,cellPadding:3},headStyles:{lineWidth:0.5,lineColor:[0,0,0],fontStyle:'bold'},bodyStyles:{lineWidth:0.5,lineColor:[0,0,0]},footStyles:{fontStyle:'bold',lineWidth:0.5,lineColor:[0,0,0]},margin:{left:30,right:30}});
+ let after=doc.lastAutoTable.finalY+15;
+ doc.setFont('helvetica','bold');doc.text('PAYMENT METHOD',32,after);after+=12; doc.setFont('helvetica','normal');doc.setFontSize(9); doc.text(doc.splitTextToSize(payMethod.value,300),32,after); after+=28;
+
+ let rawTerms=terms.value; let lines=rawTerms.split('\n'); let finalTerms=[];
+ lines.forEach(line=>{ if(line.trim()==='') finalTerms.push(''); else finalTerms=finalTerms.concat(doc.splitTextToSize(line, 280)); });
+
+ let termsY = after;
+ let signY = after;
+
+ // KIRI
+ doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+ doc.text('TERMS & CONDITIONS',32,termsY);
+ doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+ doc.text(finalTerms,32,termsY+12);
+
+ // KANAN SEJAJAR
+ doc.setFont('helvetica','normal'); doc.setFontSize(9);
+ doc.text('Hormat Kami,', W-130, signY, {align:'center'});
+ doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(0,0,150);
+ doc.text('DELTA MULTI TEKNIK', W-130, signY+20, {align:'center'});
+ doc.text('SIDOARJO', W-130, signY+32, {align:'center'});
+ doc.setTextColor(0,0,0);
+
+ doc.save('Invoice-'+invNo.value+'.pdf');
+});
+
+loadAll(); renderItems();
+['invNo','creatDate','dueDate','payMethod','billName','billAddr','billPhone','terms'].forEach(id=>{document.getElementById(id).addEventListener('input',saveAll);});
+</script>
+</body>
+</html>
