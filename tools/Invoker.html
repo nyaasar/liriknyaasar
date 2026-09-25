@@ -30,6 +30,12 @@ label{
 	display:block;
 	margin-top:10px
 }
+labeldesc{
+	font-size:8px;
+	font-weight:lighter;
+	display:block;
+	margin-top:4px 0px 10px 4px;
+}
 
 input,
 textarea{
@@ -172,12 +178,13 @@ textarea{
 	     LOGO
 	========================= -->
 
-	<label>Upload Logo Clean</label>
+	<label>Upload Logo PNG</label>
+    <labeldesc>Supported fromats are PNG, WebP, & SVG.</labeldesc>
 
 	<input
 		type="file"
 		id="logoInput"
-		accept="image/*"
+		accept="image/png,image/webp,image/svg+xml"
 	>
 
 	<img
@@ -190,12 +197,13 @@ textarea{
 	     DIGITAL STAMP
 	========================= -->
 
-	<label>Upload Digital Stamp</label>
+	<label>Upload Digital Stamp PNG</label>
+    <labeldesc>Supported fromats are PNG, WebP, & SVG.</labeldesc>
 
 	<input
 		type="file"
 		id="stampInput"
-		accept="image/*"
+		accept="image/png,image/webp,image/svg+xml"
 	>
 
 	<img
