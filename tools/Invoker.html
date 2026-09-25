@@ -136,6 +136,28 @@ textarea{
 	padding:20px;
 	box-sizing:border-box
 }
+
+.uploadPreview{
+	max-width:220px;
+	max-height:100px;
+	display:none;
+	margin-top:6px;
+	border:1px dashed #ccc;
+	padding:4px;
+	border-radius:6px;
+	object-fit:contain
+}
+
+.stampPreview{
+	max-width:180px;
+	max-height:90px;
+	display:none;
+	margin-top:6px;
+	border:1px dashed #ccc;
+	padding:4px;
+	border-radius:6px;
+	object-fit:contain
+}
 </style>
 </head>
 
@@ -144,6 +166,11 @@ textarea{
 <div class="wrap">
 
 	<h2 style="text-align:center">🧾 Invoice DMT</h2>
+
+
+	<!-- =========================
+	     LOGO
+	========================= -->
 
 	<label>Upload Logo Clean</label>
 
@@ -155,13 +182,37 @@ textarea{
 
 	<img
 		id="logoPrev"
-		style="max-width:220px;display:none;margin-top:6px;border:1px dashed #ccc;padding:4px;border-radius:6px"
+		class="uploadPreview"
 	>
+
+
+	<!-- =========================
+	     DIGITAL STAMP
+	========================= -->
+
+	<label>Upload Digital Stamp</label>
+
+	<input
+		type="file"
+		id="stampInput"
+		accept="image/*"
+	>
+
+	<img
+		id="stampPrev"
+		class="stampPreview"
+	>
+
+
+	<!-- =========================
+	     INVOICE INFO
+	========================= -->
 
 	<div class="grid2">
 
 		<div>
 			<label>Invoice No</label>
+
 			<input
 				id="invNo"
 				value="INS/DMT929"
@@ -170,6 +221,7 @@ textarea{
 
 		<div>
 			<label>Create Date</label>
+
 			<input
 				id="creatDate"
 				type="date"
@@ -178,10 +230,12 @@ textarea{
 
 	</div>
 
+
 	<div class="grid2">
 
 		<div>
 			<label>Due Date</label>
+
 			<input
 				id="dueDate"
 				type="date"
@@ -190,6 +244,7 @@ textarea{
 
 		<div>
 			<label>Pembayaran</label>
+
 			<input
 				id="payMethod"
 				value="CASH / TF BCA 0181714947 a/n ARISTIG FARANDY K."
@@ -197,6 +252,11 @@ textarea{
 		</div>
 
 	</div>
+
+
+	<!-- =========================
+	     BILL TO
+	========================= -->
 
 	<label>BILL TO</label>
 
@@ -212,6 +272,11 @@ textarea{
 		value="+6281357596317"
 	>
 
+
+	<!-- =========================
+	     ITEMS
+	========================= -->
+
 	<div id="items"></div>
 
 	<button
@@ -222,11 +287,21 @@ textarea{
 		+ Tambah Item
 	</button>
 
+
+	<!-- =========================
+	     TERMS
+	========================= -->
+
 	<label>Terms</label>
 
 	<textarea id="terms" rows="5">*Garansi 6 bulan meliputi unit Wifi kamera Ezviz H6C
 *Garansi batal jika rusak akibat kesalahan pemakaian, bencana alam dan segel rusak
 *Proses klaim garansi melalui pemeriksaan Teknisi Vendor</textarea>
+
+
+	<!-- =========================
+	     PDF BUTTONS
+	========================= -->
 
 	<button
 		class="btn btnPreview"
@@ -243,6 +318,11 @@ textarea{
 	>
 		📄 Generate PDF
 	</button>
+
+
+	<!-- =========================
+	     PDF PREVIEW
+	========================= -->
 
 	<div class="previewWrap">
 
@@ -261,6 +341,7 @@ textarea{
 
 	</div>
 
+
 	<div
 		class="small"
 		id="saveInfo"
@@ -277,6 +358,17 @@ const KEY='dmt_final_sejajar_v6';
 
 let logoDataUrl=null;
 
+let stampDataUrl=null;
+
+
+/*
+ * Stamp rotation is stored so the same invoice
+ * keeps the same stamp angle between Preview
+ * and Generate PDF.
+ */
+let stampRotation=null;
+
+
 let items=[
 	{
 		desc:'EZVIZ H6C 3MP',
@@ -289,6 +381,7 @@ let items=[
 		price:80000
 	}
 ];
+
 
 let previewUrl=null;
 
@@ -309,7 +402,9 @@ function saveAll(){
 		billPhone:billPhone.value,
 		terms:terms.value,
 		items:items,
-		logo:logoDataUrl
+		logo:logoDataUrl,
+		stamp:stampDataUrl,
+		stampRotation:stampRotation
 	};
 
 	try{
@@ -344,36 +439,49 @@ function loadAll(){
 		let d=
 			JSON.parse(raw);
 
+
 		invNo.value=
 			d.invNo||invNo.value;
+
 
 		creatDate.value=
 			d.creatDate||creatDate.value;
 
+
 		dueDate.value=
 			d.dueDate||dueDate.value;
+
 
 		payMethod.value=
 			d.payMethod||payMethod.value;
 
+
 		billName.value=
 			d.billName||billName.value;
+
 
 		billAddr.value=
 			d.billAddr||billAddr.value;
 
+
 		billPhone.value=
 			d.billPhone||billPhone.value;
+
 
 		terms.value=
 			d.terms||terms.value;
 
+
 		if(d.items)
 			items=d.items;
 
+
+		/* LOAD LOGO */
+
 		if(d.logo){
 
-			logoDataUrl=d.logo;
+			logoDataUrl=
+				d.logo;
 
 			logoPrev.src=
 				logoDataUrl;
@@ -382,6 +490,36 @@ function loadAll(){
 				'block';
 
 		}
+
+
+		/* LOAD STAMP */
+
+		if(d.stamp){
+
+			stampDataUrl=
+				d.stamp;
+
+			stampPrev.src=
+				stampDataUrl;
+
+			stampPrev.style.display=
+				'block';
+
+		}
+
+
+		/* LOAD STAMP ROTATION */
+
+		if(
+			typeof d.stampRotation===
+			'number'
+		){
+
+			stampRotation=
+				d.stampRotation;
+
+		}
+
 
 	}catch(e){}
 
@@ -398,6 +536,7 @@ if(!creatDate.value){
 		new Date();
 
 }
+
 
 if(!dueDate.value){
 
@@ -426,8 +565,10 @@ logoInput.addEventListener(
 
 		if(!f)return;
 
+
 		let r=
 			new FileReader();
+
 
 		r.onload=
 			ev=>{
@@ -444,6 +585,64 @@ logoInput.addEventListener(
 				saveAll();
 
 			};
+
+
+		r.readAsDataURL(f);
+
+	}
+);
+
+
+/* =========================
+   DIGITAL STAMP UPLOAD
+========================= */
+
+stampInput.addEventListener(
+	'change',
+	e=>{
+
+		let f=
+			e.target.files[0];
+
+		if(!f)return;
+
+
+		let r=
+			new FileReader();
+
+
+		r.onload=
+			ev=>{
+
+				stampDataUrl=
+					ev.target.result;
+
+
+				/*
+				 * Generate a subtle random tilt.
+				 *
+				 * Range:
+				 * -6° to +6°
+				 */
+				stampRotation=
+					Math.round(
+						(
+							Math.random()*12-6
+						)*10
+					)/10;
+
+
+				stampPrev.src=
+					stampDataUrl;
+
+				stampPrev.style.display=
+					'block';
+
+
+				saveAll();
+
+			};
+
 
 		r.readAsDataURL(f);
 
@@ -462,6 +661,7 @@ function renderItems(){
 
 	cont.innerHTML='';
 
+
 	items.forEach(
 		(it,i)=>{
 
@@ -469,6 +669,7 @@ function renderItems(){
 				document.createElement('div');
 
 			div.className='item';
+
 
 			div.innerHTML=`
 
@@ -486,6 +687,7 @@ function renderItems(){
 
 				</div>
 
+
 				<label>Deskripsi</label>
 
 				<input
@@ -493,6 +695,7 @@ function renderItems(){
 					data-k="desc"
 					value="${it.desc.replace(/"/g,'&quot;')}"
 				>
+
 
 				<div class="grid2">
 
@@ -508,6 +711,7 @@ function renderItems(){
 						>
 
 					</div>
+
 
 					<div>
 
@@ -525,6 +729,7 @@ function renderItems(){
 				</div>
 
 			`;
+
 
 			cont.appendChild(div);
 
@@ -551,9 +756,11 @@ function renderItems(){
 						let v=
 							e.target.value;
 
+
 						if(k!=='desc')
 							v=
 								parseFloat(v)||0;
+
 
 						items[i][k]=v;
 
@@ -580,6 +787,7 @@ function renderItems(){
 							),
 							1
 						);
+
 
 						renderItems();
 
@@ -610,6 +818,7 @@ document
 				price:0
 			});
 
+
 			renderItems();
 
 			saveAll();
@@ -626,8 +835,10 @@ function formatTgl(iso){
 
 	if(!iso)return'-';
 
+
 	let d=
 		new Date(iso);
+
 
 	return String(
 		d.getDate()
@@ -651,11 +862,13 @@ function createPDF(){
 	const {jsPDF}=
 		window.jspdf;
 
+
 	const doc=
 		new jsPDF({
 			unit:'pt',
 			format:'a4'
 		});
+
 
 	const W=
 		doc.internal.pageSize.getWidth();
@@ -704,17 +917,20 @@ function createPDF(){
 
 	doc.setFontSize(9);
 
+
 	doc.text(
 		'INVOICE NO.: '+invNo.value,
 		W-180,
 		32
 	);
 
+
 	doc.text(
 		'CRE. DATE: '+formatTgl(creatDate.value),
 		W-180,
 		46
 	);
+
 
 	doc.text(
 		'DUE DATE: '+formatTgl(dueDate.value),
@@ -732,18 +948,22 @@ function createPDF(){
 		'bold'
 	);
 
+
 	doc.text(
 		'FROM:',
 		32,
 		95
 	);
 
+
 	doc.setFont(
 		'helvetica',
 		'normal'
 	);
 
+
 	let fy=110;
+
 
 	[
 		'Delta Multi Teknik - CCTV, Networking & Air Conditioner Solution',
@@ -774,18 +994,22 @@ function createPDF(){
 		'bold'
 	);
 
+
 	doc.text(
 		'BILL TO:',
 		W-180,
 		95
 	);
 
+
 	doc.setFont(
 		'helvetica',
 		'normal'
 	);
 
+
 	let by=110;
+
 
 	doc.text(
 		billName.value,
@@ -793,7 +1017,9 @@ function createPDF(){
 		by
 	);
 
+
 	by+=12;
+
 
 	let addr=
 		doc.splitTextToSize(
@@ -801,14 +1027,17 @@ function createPDF(){
 			160
 		);
 
+
 	doc.text(
 		addr,
 		W-180,
 		by
 	);
 
+
 	by+=
 		addr.length*12;
+
 
 	doc.text(
 		billPhone.value,
@@ -838,6 +1067,7 @@ function createPDF(){
 			]
 		);
 
+
 	let total=
 		items.reduce(
 			(s,it)=>
@@ -854,9 +1084,11 @@ function createPDF(){
 
 	const tableStartY=155;
 
+
 	doc.autoTable({
 
 		startY:tableStartY,
+
 
 		head:[
 			[
@@ -867,7 +1099,9 @@ function createPDF(){
 			]
 		],
 
+
 		body:body,
+
 
 		foot:[
 			[
@@ -879,7 +1113,9 @@ function createPDF(){
 			]
 		],
 
+
 		theme:'plain',
+
 
 		styles:{
 			fontSize:9,
@@ -887,19 +1123,23 @@ function createPDF(){
 			lineWidth:0
 		},
 
+
 		headStyles:{
 			fontStyle:'bold',
 			lineWidth:0
 		},
 
+
 		bodyStyles:{
 			lineWidth:0
 		},
+
 
 		footStyles:{
 			fontStyle:'bold',
 			lineWidth:0
 		},
+
 
 		margin:{
 			left:30,
@@ -910,18 +1150,20 @@ function createPDF(){
 
 
 	/* =========================
-	   DRAW OUTER BORDER
-	   + HEADER DIVIDER
+	   TABLE BORDER
 	========================= */
 
 	const table=
 		doc.lastAutoTable;
 
+
 	const tableX=
 		table.settings.margin.left;
 
+
 	const tableY=
 		tableStartY;
+
 
 	const tableWidth=
 		doc.internal.pageSize.getWidth()
@@ -929,6 +1171,7 @@ function createPDF(){
 		table.settings.margin.left
 		-
 		table.settings.margin.right;
+
 
 	const tableHeight=
 		table.finalY-
@@ -940,6 +1183,7 @@ function createPDF(){
 		0,
 		0
 	);
+
 
 	doc.setLineWidth(
 		0.5
@@ -968,6 +1212,7 @@ function createPDF(){
 			tableY+
 			table.head[0].height;
 
+
 		doc.line(
 			tableX,
 			headerBottom,
@@ -987,10 +1232,12 @@ function createPDF(){
 		table.finalY+
 		15;
 
+
 	doc.setFont(
 		'helvetica',
 		'bold'
 	);
+
 
 	doc.text(
 		'PAYMENT METHOD',
@@ -998,14 +1245,18 @@ function createPDF(){
 		after
 	);
 
+
 	after+=12;
+
 
 	doc.setFont(
 		'helvetica',
 		'normal'
 	);
 
+
 	doc.setFontSize(9);
+
 
 	doc.text(
 		doc.splitTextToSize(
@@ -1015,6 +1266,7 @@ function createPDF(){
 		32,
 		after
 	);
+
 
 	after+=28;
 
@@ -1026,10 +1278,13 @@ function createPDF(){
 	let rawTerms=
 		terms.value;
 
+
 	let lines=
 		rawTerms.split('\n');
 
+
 	let finalTerms=[];
+
 
 	lines.forEach(
 		line=>{
@@ -1059,18 +1314,23 @@ function createPDF(){
 	let termsY=
 		after;
 
+
 	let signY=
 		after;
 
 
-	/* TERMS LEFT */
+	/* =========================
+	   TERMS LEFT
+	========================= */
 
 	doc.setFont(
 		'helvetica',
 		'bold'
 	);
 
+
 	doc.setFontSize(9);
+
 
 	doc.setTextColor(
 		0,
@@ -1078,18 +1338,22 @@ function createPDF(){
 		0
 	);
 
+
 	doc.text(
 		'TERMS & CONDITIONS',
 		32,
 		termsY
 	);
 
+
 	doc.setFont(
 		'helvetica',
 		'normal'
 	);
 
+
 	doc.setFontSize(7.5);
+
 
 	doc.text(
 		finalTerms,
@@ -1098,14 +1362,133 @@ function createPDF(){
 	);
 
 
-	/* SIGNATURE RIGHT */
+	/* =========================
+	   DIGITAL STAMP
+	========================= */
+
+	if(stampDataUrl){
+
+		try{
+
+			/*
+			 * Stamp dimensions.
+			 *
+			 * 90 x 42 pt gives it a
+			 * realistic signature/stamp
+			 * size without dominating
+			 * the invoice.
+			 */
+
+			const stampW=90;
+			const stampH=42;
+
+
+			/*
+			 * Center the stamp over
+			 * "Hormat Kami".
+			 */
+
+			const stampX=
+				W-130-
+				(stampW/2);
+
+
+			/*
+			 * Put the stamp above
+			 * "Hormat Kami".
+			 */
+
+			const stampY=
+				signY-
+				50;
+
+
+			/*
+			 * Use the stored rotation.
+			 *
+			 * If an older saved invoice
+			 * does not have one, create
+			 * a subtle random angle.
+			 */
+
+			if(
+				typeof stampRotation!=='number'
+			){
+
+				stampRotation=
+					Math.round(
+						(
+							Math.random()*12-6
+						)*10
+					)/10;
+
+				saveAll();
+
+			}
+
+
+			/*
+			 * Try PNG first.
+			 */
+
+			try{
+
+				doc.addImage(
+					stampDataUrl,
+					'PNG',
+					stampX,
+					stampY,
+					stampW,
+					stampH,
+					undefined,
+					'FAST',
+					stampRotation
+				);
+
+			}catch(e){
+
+				/*
+				 * Fall back to JPEG.
+				 */
+
+				doc.addImage(
+					stampDataUrl,
+					'JPEG',
+					stampX,
+					stampY,
+					stampW,
+					stampH,
+					undefined,
+					'FAST',
+					stampRotation
+				);
+
+			}
+
+		}catch(e){
+
+			console.error(
+				'Stamp Error:',
+				e
+			);
+
+		}
+
+	}
+
+
+	/* =========================
+	   SIGNATURE TEXT
+	========================= */
 
 	doc.setFont(
 		'helvetica',
 		'normal'
 	);
 
+
 	doc.setFontSize(9);
+
 
 	doc.text(
 		'Hormat Kami,',
@@ -1116,18 +1499,22 @@ function createPDF(){
 		}
 	);
 
+
 	doc.setFont(
 		'helvetica',
 		'bold'
 	);
 
+
 	doc.setFontSize(8);
+
 
 	doc.setTextColor(
 		0,
 		0,
 		150
 	);
+
 
 	doc.text(
 		'DELTA MULTI TEKNIK',
@@ -1138,6 +1525,7 @@ function createPDF(){
 		}
 	);
 
+
 	doc.text(
 		'SIDOARJO',
 		W-130,
@@ -1146,6 +1534,7 @@ function createPDF(){
 			align:'center'
 		}
 	);
+
 
 	doc.setTextColor(
 		0,
@@ -1174,6 +1563,7 @@ document
 				const doc=
 					createPDF();
 
+
 				if(previewUrl){
 
 					URL.revokeObjectURL(
@@ -1182,29 +1572,36 @@ document
 
 				}
 
+
 				const pdfBlob=
 					doc.output('blob');
+
 
 				previewUrl=
 					URL.createObjectURL(
 						pdfBlob
 					);
 
+
 				const preview=
 					document.getElementById(
 						'pdfPreview'
 					);
+
 
 				const empty=
 					document.getElementById(
 						'previewEmpty'
 					);
 
+
 				preview.src=
 					previewUrl;
 
+
 				preview.style.display=
 					'block';
+
 
 				empty.style.display=
 					'none';
@@ -1215,6 +1612,7 @@ document
 					'PDF Preview Error:',
 					error
 				);
+
 
 				alert(
 					'Gagal membuat PDF preview. Silakan cek console browser untuk detail error.'
@@ -1241,6 +1639,7 @@ document
 				const doc=
 					createPDF();
 
+
 				doc.save(
 					'Invoice-'+
 					invNo.value+
@@ -1253,6 +1652,7 @@ document
 					'PDF Generate Error:',
 					error
 				);
+
 
 				alert(
 					'Gagal membuat PDF. Silakan cek console browser untuk detail error.'
