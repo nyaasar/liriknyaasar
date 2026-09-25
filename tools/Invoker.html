@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Invoice DMT Final Sejajar</title>
+<title>Invoker DMT</title>
 
 <script>
-/** @license
+    /** @license
  *
  * jsPDF - PDF Document creation from JavaScript
  * Version 2.5.1 Built on 2022-01-28T15:37:57.789Z
@@ -407,7 +407,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 //# sourceMappingURL=jspdf.umd.min.js.map
 </script>
 <script>
-/*!
+    /*!
  * 
  *               jsPDF AutoTable plugin v3.8.2
  *
@@ -440,11 +440,12 @@ label{
 	display:block;
 	margin-top:10px
 }
+
 labeldesc{
 	font-size:8px;
 	font-weight:lighter;
 	display:block;
-	margin-top:6px
+	margin-top:4px 0px 10px 4px;
 }
 
 input,
@@ -589,7 +590,7 @@ textarea{
 	========================= -->
 
 	<label>Upload Logo PNG</label>
-    <labeldesc>Supported fromats are PNG, WebP, SVG.</labeldesc>
+	<labeldesc>Supported fromats are PNG, WebP, & SVG.</labeldesc>
 
 	<input
 		type="file"
@@ -608,7 +609,7 @@ textarea{
 	========================= -->
 
 	<label>Upload Digital Stamp PNG</label>
-    <labeldesc>Supported fromats are PNG, WebP, SVG.</labeldesc>
+	<labeldesc>Supported fromats are PNG, WebP, & SVG.</labeldesc>
 
 	<input
 		type="file"
@@ -780,9 +781,14 @@ let stampDataUrl=null;
 
 
 /*
- * Stamp rotation is stored so the same invoice
- * keeps the same stamp angle between Preview
- * and Generate PDF.
+ * Current stamp rotation.
+ *
+ * A new value is generated every time
+ * the Preview PDF button is pressed.
+ *
+ * The current value is then reused by
+ * Generate PDF so the downloaded invoice
+ * matches the preview.
  */
 let stampRotation=null;
 
@@ -926,7 +932,12 @@ function loadAll(){
 		}
 
 
-		/* LOAD STAMP ROTATION */
+		/*
+		 * Load the previously saved rotation.
+		 *
+		 * It will be replaced by a new random
+		 * value whenever Preview PDF is pressed.
+		 */
 
 		if(
 			typeof d.stampRotation===
@@ -1037,18 +1048,11 @@ stampInput.addEventListener(
 
 
 				/*
-				 * Generate a subtle random tilt.
+				 * Do NOT randomize the stamp here.
 				 *
-				 * Range:
-				 * -6° to +6°
+				 * Rotation is randomized by the
+				 * Preview PDF button instead.
 				 */
-				stampRotation=
-					Math.round(
-						(
-							Math.random()*12-6
-						)*10
-					)/10;
-
 
 				stampPrev.src=
 					stampDataUrl;
@@ -1822,25 +1826,18 @@ function createPDF(){
 
 
 			/*
-			 * Use the stored rotation.
+			 * stampRotation is now generated
+			 * by the Preview PDF button.
 			 *
-			 * If an older saved invoice
-			 * does not have one, create
-			 * a subtle random angle.
+			 * Generate PDF simply reuses
+			 * the current rotation.
 			 */
 
 			if(
 				typeof stampRotation!=='number'
 			){
 
-				stampRotation=
-					Math.round(
-						(
-							Math.random()*12-6
-						)*10
-					)/10;
-
-				saveAll();
+				stampRotation=0;
 
 			}
 
@@ -1978,6 +1975,26 @@ document
 
 			try{
 
+				/*
+				 * Randomize stamp rotation every
+				 * time Preview PDF is pressed.
+				 *
+				 * Range:
+				 * -6.0° to +6.0°
+				 */
+
+				if(stampDataUrl){
+
+					stampRotation=
+						Math.round(
+							(
+								Math.random()*12-6
+							)*10
+						)/10;
+
+				}
+
+
 				const doc=
 					createPDF();
 
@@ -2023,6 +2040,16 @@ document
 
 				empty.style.display=
 					'none';
+
+
+				/*
+				 * Save the newly generated
+				 * rotation so the current
+				 * preview remains the same
+				 * after a page reload.
+				 */
+
+				saveAll();
 
 			}catch(error){
 
