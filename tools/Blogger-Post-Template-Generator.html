@@ -18,6 +18,13 @@ h1{margin:0 0 6px}p.help{color:#5f6368;margin-top:0}
 .preview-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
 #preview{width:100%;height:520px;border:1px solid #dadce0;border-radius:8px;background:#fff;display:block}
 .preview-note{font-size:.8rem;color:#666;margin:6px 0 0}.preview-hidden{display:none}.preview-title button{padding:7px 11px;font-size:.85rem}
+.preview-css-editor{margin-top:14px;padding-top:12px;border-top:1px solid #dadce0}
+#previewCss{min-height:150px;font-family:ui-monospace,monospace;font-size:.85rem}
+.preview-css-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.preview-css-status{font-size:.8rem;color:#5f6368;margin-top:6px;min-height:1.2em}
+.preview-theme-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}
+.preview-theme{padding:7px 11px;font-size:.85rem}
+.preview-theme.primary{background:#1967d2;color:#fff}
 @media(max-width:900px){.preview-panel{position:relative;top:auto;max-height:none}}
 h2{font-size:1.15rem;margin:8px 0 14px}h3{font-size:1rem;margin:20px 0 10px}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -109,12 +116,33 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div id="previewWrap" class="preview-hidden">
   <iframe id="preview" title="Live Blogger HTML preview" sandbox="allow-same-origin"></iframe>
   <p class="preview-note">This is a browser preview of the generated post HTML. Blogger-specific CSS/theme styling may look different after publishing.</p>
+
+  <div class="preview-css-editor">
+    <label for="previewCss">Blogger Theme CSS</label>
+    <textarea id="previewCss" spellcheck="false"
+      placeholder="Paste your Blogger &lt;b:skin&gt;...&lt;/b:skin&gt; and/or &lt;style&gt;...&lt;/style&gt; here. You can paste them almost exactly as they appear in your Blogger template."></textarea>
+    <div class="preview-css-actions">
+      <button type="button" id="applyPreviewCss">Refresh Preview</button>
+      <span class="hint">The preview extracts CSS from &lt;b:skin&gt; and &lt;style&gt;, decodes Blogger HTML entities, supplies common Blogger variables, and wraps the post in &lt;article&gt;. It does not change the generated Blogger HTML.</span>
+    </div>
+    <div id="previewCssStatus" class="preview-css-status" aria-live="polite"></div>
+    <div class="preview-theme-actions">
+      <span class="hint">Preview theme:</span>
+      <button type="button" class="preview-theme primary" data-theme="light">Light</button>
+      <button type="button" class="preview-theme" data-theme="dark">Dark</button>
+    </div>
+  </div>
 </div>
 </section>
 </div>
 <script>
 const $ = id => document.getElementById(id);
 const ids=['image','imgWidth','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','anime','animeUrl','themeType','albumName','albumUrl','albumYear','youtube','kanji','romaji','translation','idns','notes'];
+const previewCss=$('previewCss');
+try{previewCss.value=localStorage.getItem('bloggerGen_previewCss') ?? '';}catch(e){}
+previewCss.addEventListener('input',()=>{
+  try{localStorage.setItem('bloggerGen_previewCss',previewCss.value)}catch(e){}
+});
 // Persist form values locally as you type.
 ids.forEach(id=>{
   try{$(id).value=localStorage.getItem('bloggerGen_'+id) ?? $(id).value;}catch(e){}
@@ -197,18 +225,133 @@ function addVideoItem(title='',url=''){
 });
   $('extraVideos').appendChild(wrap);
 }
+function extractBloggerCss(source){
+  let css=String(source||'');
+
+  // Accept complete Blogger <b:skin> and <style> blocks, or plain CSS.
+  const skinMatches=[...css.matchAll(/<b:skin\b[^>]*>([\s\S]*?)<\/b:skin\s*>/gi)];
+  const styleMatches=[...css.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)];
+
+  let extracted='';
+  skinMatches.forEach(m=>extracted+=m[1]+'\n');
+  styleMatches.forEach(m=>extracted+=m[1]+'\n');
+
+  if(!extracted){
+    extracted=css;
+  }
+
+  // Blogger templates frequently store quotes/entities inside <style>.
+  const textarea=document.createElement('textarea');
+  textarea.innerHTML=extracted;
+  extracted=textarea.value;
+
+  // CDATA markers are useful in XML templates but unnecessary in the iframe.
+  extracted=extracted.replace(/<!\[CDATA\[|\]\]>/g,'');
+
+  // Replace Blogger template expressions that cannot be evaluated in a
+  // standalone preview. CSS variables supplied below remain usable.
+  extracted=extracted.replace(/\$\([^)]+\)/g,'initial');
+
+  return {
+    css: extracted,
+    skinCount: skinMatches.length,
+    styleCount: styleMatches.length,
+    hadWrapper: skinMatches.length>0 || styleMatches.length>0
+  };
+}
+
 function updatePreview(){
   const frame=$('preview');
   if(!frame)return;
+
   const html=$('output').value||'';
+  const parsed=extractBloggerCss($('previewCss')?.value||'');
+  const themeVars=`<style>
+    :root{
+      --bru300:#4b90cb;
+      --mrh700:#a34848;
+      --pth000:#000000;
+      --pth100:#202020;
+      --pth200:#383838;
+      --pth300:#464646;
+      --abu400:#525252;
+      --abu500:#7c7c7c;
+      --abu600:#d7d7d7;
+      --htm700:#e7e7e7;
+      --htm800:#c5c5c5;
+      --htm900:#f3f3f3;
+      --htm000:#ffffff;
+    }
+    html[data-theme="dark"]{
+      --bru300:#bdff93;
+      --mrh700:#400101;
+      --pth000:#f0f1f3;
+      --pth100:#dfe1e5;
+      --pth200:#c8cbd1;
+      --pth300:#b0b4bc;
+      --abu400:#969ba5;
+      --abu500:#747983;
+      --abu600:#4f545c;
+      --htm700:#30343a;
+      --htm800:#24272c;
+      --htm900:#1c1f23;
+      --htm000:#17191c;
+    }
+    html[data-theme="light"]{
+      --bru300:#4b90cb;
+      --mrh700:#a34848;
+      --pth000:#25272a;
+      --pth100:#35373b;
+      --pth200:#46494e;
+      --pth300:#55585e;
+      --abu400:#686c73;
+      --abu500:#858990;
+      --abu600:#b9bcc1;
+      --htm700:#e2e3e5;
+      --htm800:#d3d5d8;
+      --htm900:#ececed;
+      --htm000:#f7f7f6;
+    }
+  </style>`;
+
   const baseStyles=`<style>
     html,body{margin:0;padding:16px;background:#fff;color:#202124;font-family:Arial,sans-serif;line-height:1.5}
     img{max-width:100%;height:auto}
     iframe{max-width:100%}
     table{max-width:100%;border-collapse:collapse}
     .preview-empty{color:#777;text-align:center;padding:40px 12px}
+    article{display:block}
   </style>`;
-  try{frame.srcdoc=html ? baseStyles+html : baseStyles+'<div class="preview-empty">Start entering your post details to see the live preview.</div>';}catch(e){console.error('Preview update failed',e);}
+
+  // A minimal Blogger-like page context. This makes selectors such as
+  // "article iframe" and "article div div.separator img" match.
+  const content=html
+    ? `<article class="post-body entry-content">${html}</article>`
+    : '<div class="preview-empty">Start entering your post details to see the live preview.</div>';
+
+  const customStyles=parsed.css.trim()
+    ? `<style data-preview-blogger-css>\n${parsed.css}\n</style>`
+    : '';
+
+  try{
+    frame.srcdoc='<!DOCTYPE html><html data-theme="'+previewTheme+'"><head><meta charset="UTF-8">'
+      +themeVars+baseStyles+customStyles+'</head><body>'+content+'</body></html>';
+
+    const status=$('previewCssStatus');
+    if(status){
+      if(parsed.hadWrapper){
+        status.textContent=`Loaded ${parsed.skinCount ? '<b:skin>' : ''}${parsed.skinCount && parsed.styleCount ? ' + ' : ''}${parsed.styleCount ? '<style>' : ''} CSS. Blogger-only $(...) variables were neutralized for the preview.`;
+      }else if(parsed.css.trim()){
+        status.textContent='Loaded plain CSS.';
+      }else{
+        status.textContent='';
+      }
+    }
+  }catch(e){
+    console.error('Preview update failed',e);
+    const status=$('previewCssStatus');
+    if(status)status.textContent='Preview CSS could not be applied: '+e.message;
+  }
 }
 
 function scheduleLiveGenerate(){
@@ -250,10 +393,7 @@ document.addEventListener('change',e=>{
   if(e.target.matches('.extra-video-title,.extra-video-url')) scheduleLiveGenerate();
 });
 
-$('generate').addEventListener('click',()=>{
-  try{gen();}
-  catch(e){console.error(e);}
-});
+// No separate Generate button exists in this UI; generation is already live.
 $('copy').addEventListener('click',async()=>{
   try{
     if(!$('output').value)gen();
@@ -299,6 +439,8 @@ $('clear').addEventListener('click',()=>{
   $('imgWidth').value=320;
   $('imgHeight').value=720;
   $('output').value='';
+  $('previewCss').value='';
+  try{localStorage.removeItem('bloggerGen_previewCss')}catch(e){}
   updatePreview();
   $('status').textContent='Fields cleared.';
 });
@@ -307,6 +449,23 @@ $('togglePreview').addEventListener('click',()=>{
   const hidden=wrap.classList.toggle('preview-hidden');
   $('togglePreview').textContent=hidden?'Show Preview':'Hide Preview';
   $('togglePreview').setAttribute('aria-expanded',String(!hidden));
+});
+
+$('applyPreviewCss').addEventListener('click',()=>{
+  updatePreview();
+  $('status').textContent='Live Preview refreshed with custom CSS.';
+});
+
+let previewTheme='light';
+document.querySelectorAll('.preview-theme').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    previewTheme=btn.dataset.theme;
+    document.querySelectorAll('.preview-theme').forEach(b=>{
+      b.classList.toggle('primary',b===btn);
+    });
+    updatePreview();
+    $('status').textContent='Live Preview refreshed in '+previewTheme+' theme.';
+  });
 });
 </script>
 </body>
