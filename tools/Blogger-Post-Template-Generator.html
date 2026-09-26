@@ -3,25 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Offline-first: all CSS and JavaScript are embedded in this file; no external assets are required. -->
 <title>Blogger Post Template Generator</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#202124;background:#f4f6f8}
-*{box-sizing:border-box}body{margin:0;padding:24px;max-width:1500px;margin-inline:auto}
-h1{margin:0 0 6px}p.help{color:#5f6368;margin-top:0}
+:root{
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+  color:#202124;
+  background:#f4f6f8;
+  color-scheme:light;
+  --page-bg:#f4f6f8;
+  --panel-bg:#fff;
+  --text:#202124;
+  --muted:#5f6368;
+  --border:#dadce0;
+  --input-border:#c6c9ce;
+  --input-bg:#fff;
+  --button-bg:#e8eaed;
+  --button-text:#202124;
+}
+html[data-ui-theme="dark"]{
+  color-scheme:dark;
+  --page-bg:#17191c;
+  --panel-bg:#22252a;
+  --text:#f0f1f3;
+  --muted:#aeb4bd;
+  --border:#3a3f47;
+  --input-border:#4b515b;
+  --input-bg:#1b1e22;
+  --button-bg:#343940;
+  --button-text:#f0f1f3;
+}
+*{box-sizing:border-box}body{margin:0;padding:24px;max-width:1500px;margin-inline:auto;background:var(--page-bg);color:var(--text)}
+h1{margin:0 0 6px}p.help{color:var(--muted);margin-top:0}
+.app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px}
+.app-header .help{margin-bottom:0}
+.theme-toggle{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-width:92px;
+  justify-content:center;
+  padding:9px 13px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--panel-bg);
+  color:var(--text);
+  box-shadow:0 2px 7px #00000012;
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.theme-toggle:hover{filter:none;box-shadow:0 4px 12px #0000001c;transform:translateY(-1px)}
+.theme-toggle:focus-visible{outline:3px solid #8ab4f8;outline-offset:2px}
+.theme-icon{font-size:1.1rem;line-height:1}
+.theme-label{font-size:.88rem;font-weight:700}
+html[data-ui-theme="dark"] .theme-toggle{background:#2b3037;border-color:#4a515b}
+html[data-ui-theme="dark"] .theme-icon{font-size:1rem}
+html[data-ui-theme="dark"] .panel{box-shadow:0 3px 14px #00000035}
+html[data-ui-theme="dark"] input::placeholder,
+html[data-ui-theme="dark"] textarea::placeholder{color:#777e89}
+
 .layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr);gap:20px;align-items:start}
-.panel{background:white;border:1px solid #dadce0;border-radius:12px;padding:18px;box-shadow:0 2px 8px #0000000a}
+.panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 2px 8px #0000000a}
 .preview-panel{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow:auto}
 .output-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .output-header h2{margin:8px 0}
 .output-actions{display:flex;flex-wrap:wrap;gap:7px;margin:0}
 .output-actions button{padding:9px 12px;font-size:.9rem}
 .preview-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
-#preview{width:100%;height:520px;border:1px solid #dadce0;border-radius:8px;background:#fff;display:block}
-.preview-note{font-size:.8rem;color:#666;margin:6px 0 0}.preview-hidden{display:none}.preview-title button{padding:7px 11px;font-size:.85rem}
-.preview-css-editor{margin-top:14px;padding-top:12px;border-top:1px solid #dadce0}
+#preview{width:100%;height:520px;border:1px solid var(--border);border-radius:8px;background:#fff;display:block}
+.preview-note{font-size:.8rem;color:var(--muted);margin:6px 0 0}.preview-hidden{display:none}.preview-title button{padding:7px 11px;font-size:.85rem}
+.preview-css-editor{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
 #previewCss{min-height:150px;font-family:ui-monospace,monospace;font-size:.85rem}
 .preview-css-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
-.preview-css-status{font-size:.8rem;color:#5f6368;margin-top:6px;min-height:1.2em}
+.preview-css-status{font-size:.8rem;color:var(--muted);margin-top:6px;min-height:1.2em}
 .preview-theme-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}
 .preview-theme{padding:7px 11px;font-size:.85rem}
 .preview-theme.primary{background:#1967d2;color:#fff}
@@ -29,22 +83,37 @@ h1{margin:0 0 6px}p.help{color:#5f6368;margin-top:0}
 h2{font-size:1.15rem;margin:8px 0 14px}h3{font-size:1rem;margin:20px 0 10px}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 label{display:block;font-size:.88rem;font-weight:650;margin-bottom:5px}
-input,textarea,select{width:100%;font:inherit;padding:10px;border:1px solid #c6c9ce;border-radius:7px;background:#fff}
+input,textarea,select{width:100%;font:inherit;padding:10px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--text)}
 textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-family:ui-monospace,monospace;font-size:.9rem}
-.full{grid-column:1/-1}.hint{font-size:.8rem;color:#666;margin:5px 0 0}
+.full{grid-column:1/-1}.hint{font-size:.8rem;color:var(--muted);margin:5px 0 0}
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
-button{border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:650;cursor:pointer;background:#e8eaed;color:#202124}
+button{border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:650;cursor:pointer;background:var(--button-bg);color:var(--button-text)}
 button.primary{background:#1967d2;color:white}button:hover{filter:brightness(.96)}
 #output{min-height:500px;max-height:75vh;font-family:ui-monospace,monospace;font-size:12px;white-space:pre;overflow:auto}
 .status{font-size:.85rem;color:#137333;min-height:1.2em}
 details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.extra-video-item{grid-template-columns:1fr!important}body{padding:12px}.fields{grid-template-columns:1fr}.panel{padding:13px}}
+@media(max-width:560px){
+  .extra-video-item{grid-template-columns:1fr!important}
+  body{padding:12px}
+  .fields{grid-template-columns:1fr}
+  .panel{padding:13px}
+  .app-header{align-items:stretch}
+  .theme-toggle{align-self:flex-start;min-width:82px}
+}
 </style>
 </head>
 <body>
-<h1>Blogger Post Template Generator</h1>
-<p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in your browser.</p>
+<header class="app-header">
+  <div>
+    <h1>Blogger Post Template Generator</h1>
+    <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in your browser.</p>
+  </div>
+  <button type="button" id="toggleDarkMode" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">
+    <span class="theme-icon" aria-hidden="true">☾</span>
+    <span class="theme-label">Dark</span>
+  </button>
+</header>
 <div class="layout">
 <section class="panel">
 <h2>Post details</h2>
@@ -139,6 +208,30 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 const $ = id => document.getElementById(id);
 const ids=['image','imgWidth','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','anime','animeUrl','themeType','albumName','albumUrl','albumYear','youtube','kanji','romaji','translation','idns','notes'];
 const previewCss=$('previewCss');
+
+let uiTheme='light';
+try{uiTheme=localStorage.getItem('bloggerGen_uiTheme')||'light';}catch(e){}
+function setUiTheme(theme){
+  uiTheme=theme==='dark'?'dark':'light';
+  document.documentElement.dataset.uiTheme=uiTheme;
+  const btn=$('toggleDarkMode');
+  if(btn){
+    const dark=uiTheme==='dark';
+    btn.setAttribute('aria-pressed',String(dark));
+    btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+    const icon=btn.querySelector('.theme-icon');
+    const label=btn.querySelector('.theme-label');
+    if(icon)icon.textContent=dark?'☀':'☾';
+    if(label)label.textContent=dark?'Light':'Dark';
+  }
+  try{localStorage.setItem('bloggerGen_uiTheme',uiTheme)}catch(e){}
+}
+setUiTheme(uiTheme);
+
+$('toggleDarkMode').addEventListener('click',()=>{
+  setUiTheme(uiTheme==='dark'?'light':'dark');
+});
+
 try{previewCss.value=localStorage.getItem('bloggerGen_previewCss') ?? '';}catch(e){}
 previewCss.addEventListener('input',()=>{
   try{localStorage.setItem('bloggerGen_previewCss',previewCss.value)}catch(e){}
@@ -215,7 +308,7 @@ function gen(){
 function addVideoItem(title='',url=''){
   const wrap=document.createElement('div');
   wrap.className='extra-video-item';
-  wrap.style.cssText='display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:10px 0;padding:12px;border:1px solid #dadce0;border-radius:8px';
+  wrap.style.cssText='display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel-bg)';
   wrap.innerHTML='<div><label>Video heading</label><input class="extra-video-title" placeholder="e.g. Hanatan Cover"></div><div><label>YouTube video ID or URL</label><input class="extra-video-url" placeholder="Video ID or URL"></div><button type="button" class="remove-video">Remove</button>';
   wrap.querySelector('.extra-video-title').value=title;
   wrap.querySelector('.extra-video-url').value=url;
