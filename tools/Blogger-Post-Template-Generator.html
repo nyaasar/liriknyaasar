@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blogger Post Template Generator</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#202124;background:#f4f6f8}
+*{box-sizing:border-box}body{margin:0;padding:24px;max-width:1500px;margin-inline:auto}
+h1{margin:0 0 6px}p.help{color:#5f6368;margin-top:0}
+.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr);gap:20px;align-items:start}
+.panel{background:white;border:1px solid #dadce0;border-radius:12px;padding:18px;box-shadow:0 2px 8px #0000000a}
+.preview-panel{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow:auto}
+.output-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.output-header h2{margin:8px 0}
+.output-actions{display:flex;flex-wrap:wrap;gap:7px;margin:0}
+.output-actions button{padding:9px 12px;font-size:.9rem}
+.preview-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
+#preview{width:100%;height:520px;border:1px solid #dadce0;border-radius:8px;background:#fff;display:block}
+.preview-note{font-size:.8rem;color:#666;margin:6px 0 0}.preview-hidden{display:none}.preview-title button{padding:7px 11px;font-size:.85rem}
+@media(max-width:900px){.preview-panel{position:relative;top:auto;max-height:none}}
+h2{font-size:1.15rem;margin:8px 0 14px}h3{font-size:1rem;margin:20px 0 10px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:.88rem;font-weight:650;margin-bottom:5px}
+input,textarea,select{width:100%;font:inherit;padding:10px;border:1px solid #c6c9ce;border-radius:7px;background:#fff}
+textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-family:ui-monospace,monospace;font-size:.9rem}
+.full{grid-column:1/-1}.hint{font-size:.8rem;color:#666;margin:5px 0 0}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
+button{border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:650;cursor:pointer;background:#e8eaed;color:#202124}
+button.primary{background:#1967d2;color:white}button:hover{filter:brightness(.96)}
+#output{min-height:500px;max-height:75vh;font-family:ui-monospace,monospace;font-size:12px;white-space:pre;overflow:auto}
+.status{font-size:.85rem;color:#137333;min-height:1.2em}
+details{margin:12px 0}summary{cursor:pointer;font-weight:700}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.extra-video-item{grid-template-columns:1fr!important}body{padding:12px}.fields{grid-template-columns:1fr}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<h1>Blogger Post Template Generator</h1>
+<p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in your browser.</p>
+<div class="layout">
+<section class="panel">
+<h2>Post details</h2>
+<div class="fields">
+<div class="full"><label for="image">Image URL (full Blogger image URL)</label><input id="image" placeholder="https://blogger.googleusercontent.com/..."></div>
+<div><label for="imgWidth">Displayed image width</label><input id="imgWidth" type="number" value="320" min="1"></div>
+<div><label for="imgHeight">Original image height</label><input id="imgHeight" type="number" value="720" min="1"></div>
+<div class="full"><label for="titleJp">Title (Japanese)</label><input id="titleJp" placeholder="雲雀"></div>
+<div class="full"><label for="titleOther">Title (other / Indonesian)</label><input id="titleOther" placeholder="(Burung Sanma)"></div>
+<div><label for="titleTooltip">Japanese title tooltip</label><input id="titleTooltip" placeholder="Hibari"></div>
+<div><label for="titleOtherTooltip">Other title tooltip</label><input id="titleOtherTooltip" placeholder="Skylarks"></div>
+<div><label for="artist">Artist</label><input id="artist" placeholder="ASCA"></div>
+<div><label for="artistJp">Artist in original script (optional)</label><input id="artistJp"></div>
+<div class="full">
+<label>Relation section (optional)</label>
+<div class="actions" style="margin:6px 0 12px">
+  <button type="button" class="relation-choice primary" data-relation="none" aria-pressed="true">None</button>
+  <button type="button" class="relation-choice" data-relation="anime" aria-pressed="false">Anime</button>
+  <button type="button" class="relation-choice" data-relation="album" aria-pressed="false">Album</button>
+</div>
+<input type="hidden" id="relationType" value="none">
+<div id="animeRelation" class="fields" style="display:none">
+  <div class="full"><label for="anime">Anime / series</label><input id="anime" placeholder="Lord El-Melloi II Sei no Jikenbo: Rail Zeppelin Grace Note"></div>
+  <div><label for="animeUrl">Anime database URL</label><input id="animeUrl" placeholder="https://myanimelist.net/anime/..."></div>
+  <div><label for="themeType">Theme type</label><input id="themeType" placeholder="Ending Theme"></div>
+</div>
+<div id="albumRelation" class="fields" style="display:none">
+  <div class="full"><label for="albumName">Album Name</label><input id="albumName" placeholder="Album name"></div>
+  <div><label for="albumUrl">VGMdb/Wiki database URL</label><input id="albumUrl" placeholder="https://vgmdb.net/album/..."></div>
+  <div><label for="albumYear">Year</label><input id="albumYear" inputmode="numeric" placeholder="2025"></div>
+</div>
+</div>
+<div class="full"><label for="youtube">Main YouTube video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
+</div>
+
+<h3>Lyrics</h3>
+<p class="hint">Paste each language line-by-line. Blank lines create stanza breaks. The combined tab interleaves Kanji → Romaji → Indonesian → optional singable translation.</p>
+<div class="fields">
+<div><label for="kanji">Kanji / original lyrics</label><textarea id="kanji" class="lyrics" placeholder="大事なものをいつも&#10;私は間違えるの"></textarea></div>
+<div><label for="romaji">Romaji</label><textarea id="romaji" class="lyrics" placeholder="daiji na mono wo itsumo&#10;watashi wa machigaeru no"></textarea></div>
+<div><label for="translation">Indonesian translation</label><textarea id="translation" class="lyrics" placeholder="Selalu 'ku salah mengira&#10;apa-apa saja yang berharga"></textarea></div>
+<div><label for="idns">IDNS / singable translation (optional)</label><textarea id="idns" class="lyrics" placeholder="Optional singable version, line-by-line"></textarea></div>
+</div>
+
+<h3>Optional content</h3>
+<div class="fields">
+
+<div class="full"><label for="notes">Notes / explanation (HTML allowed)</label><textarea id="notes" placeholder="Hibari; Sering dikenal dengan nama ..."></textarea></div>
+<div class="full"><label>Additional YouTube videos / versions (optional)</label><div id="extraVideos"></div><button type="button" id="addVideo">+ Add another video</button><p class="hint">Add as many covers, alternate versions, or streams as needed. Each item can have its own heading and video ID or URL.</p></div>
+</div>
+<div class="status" id="status" aria-live="polite"></div>
+</section>
+
+<section class="panel preview-panel">
+<div class="output-header">
+  <h2>Generated Blogger HTML</h2>
+  <div class="output-actions">
+    <button type="button" id="copy">Copy HTML</button>
+    <button type="button" id="download">Download .html</button>
+    <button type="button" id="clear">Clear fields</button>
+  </div>
+</div>
+<p class="hint">The HTML updates automatically as you edit the fields. Use the preview toggle when you want to check the rendered post. Copy the output and paste it into Blogger's HTML view.</p>
+<textarea id="output" spellcheck="false" placeholder="Your Blogger HTML will appear here..."></textarea>
+<div class="preview-title">
+  <h3 style="margin:0">Live Preview</h3>
+  <button type="button" id="togglePreview" aria-expanded="false">Show Preview</button>
+</div>
+<div id="previewWrap" class="preview-hidden">
+  <iframe id="preview" title="Live Blogger HTML preview" sandbox="allow-same-origin"></iframe>
+  <p class="preview-note">This is a browser preview of the generated post HTML. Blogger-specific CSS/theme styling may look different after publishing.</p>
+</div>
+</section>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const ids=['image','imgWidth','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','anime','animeUrl','themeType','albumName','albumUrl','albumYear','youtube','kanji','romaji','translation','idns','notes'];
+// Persist form values locally as you type.
+ids.forEach(id=>{
+  try{$(id).value=localStorage.getItem('bloggerGen_'+id) ?? $(id).value;}catch(e){}
+  $(id).addEventListener('input',()=>{try{localStorage.setItem('bloggerGen_'+id,$(id).value)}catch(e){}});
+});
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function attr(s){return esc(s).replace(/'/g,'&#39;');}
+function urlSafe(s){return esc(s).replace(/"/g,'%22');}
+function videoId(v){
+  v=(v||'').trim(); if(!v)return '';
+  const m=v.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|watch\?v=|shorts\/))([A-Za-z0-9_-]{6,})/);
+  return m?m[1]:v.replace(/[?&].*$/,'').replace(/\/$/,'');
+}
+function lines(id){return $(id).value.replace(/\r/g,'').split('\n');}
+function divLines(text,tab,interleave=false){
+  return text.map(line=>line.trim()===''?'<div id="'+tab+'"><br /></div>':'<div id="'+tab+'">'+esc(line)+'</div>').join('');
+}
+function combined(){
+  const a=lines('kanji'),b=lines('romaji'),c=lines('translation');
+  const d=$('idns').value.trim()?lines('idns'):[];
+  const max=Math.max(a.length,b.length,c.length,d.length);let out='';
+  for(let i=0;i<max;i++){
+    [a[i],b[i],c[i],d[i]].forEach(v=>{
+      if(v!==undefined)out+=v.trim()===''?'<div id="tab1"><br /></div>':'<div id="tab1">'+esc(v)+'</div>';
+    });
+  }
+  return out;
+}
+function tabBody(tab,id){
+  return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'">'+divLines(lines(id),tab)+'</div>';
+}
+function gen(){
+  const img=$('image').value.trim(), jp=$('titleJp').value, other=$('titleOther').value;
+  const iw=Math.max(1,parseInt($('imgWidth').value,10)||320), ih=Math.max(1,parseInt($('imgHeight').value,10)||720);
+  const main=videoId($('youtube').value);
+  const extras=[...document.querySelectorAll('.extra-video-item')].map(row=>({title:row.querySelector('.extra-video-title').value.trim(),id:videoId(row.querySelector('.extra-video-url').value)})).filter(v=>v.id);
+  let h='<div class="separator" style="clear: both; text-align: center;">\n';
+  if(img){
+    h+='  <div class="separator" style="clear: both;"><a href="'+attr(img)+'" style="display: block; padding: 1em 0; text-align: center;"><img alt="" border="0" width="'+iw+'" data-original-height="'+ih+'" data-original-width="1280" src="'+attr(img)+'"/></a></div>\n';
+  }else h+='  <!-- Add your image URL in the generator to include the post image. -->\n';
+  h+='  <div style="text-align: center;">\n';
+  if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'"><b>'+esc(jp)+'</b></span2><br />\n';
+  if(other)h+='    <span2 style="font-size: large;" title="'+attr($('titleOtherTooltip').value)+'"><b>'+esc(other)+'</b></span2><br />\n';
+  h+='  </div>\n  <br />\n  <br />\n  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+esc(jp)+'</span><span class="mdlktgri2">'+esc($('titleTooltip').value)+'</span></td>\n';
+  h+='      <td class="nama_artis">'+($('artistJp').value?'<span class="mdlktgri1">'+esc($('artistJp').value)+'</span>':'')+'<span class="mdlktgri1">'+esc($('artist').value)+'</span></td>\n';
+  let relation='-';
+  if($('relationType').value==='anime'){
+    const name=$('anime').value.trim(), url=$('animeUrl').value.trim(), theme=$('themeType').value.trim();
+    const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
+    relation=(linked+(theme?(linked?' - ':'')+esc(theme):''))||'-';
+  }else if($('relationType').value==='album'){
+    const name=$('albumName').value.trim(), url=$('albumUrl').value.trim(), year=$('albumYear').value.trim();
+    const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
+    relation=(linked+(year?(linked?' - ':'')+esc(year):''))||'-';
+  }
+  h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n  <br />\n  <br />\n';
+  if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
+  h+='  <br />\n  <br />\n  <br />\n  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  if($('notes').value.trim())h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
+  extras.forEach(v=>{
+    h+='    <br /><br /><br />\n';
+    if(v.title)h+='    <span style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
+    h+='    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
+  });
+  if($('notes').value.trim())h+='  </div>\n';
+  h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n</div>';
+  $('output').value=h;
+  updatePreview();
+}
+function addVideoItem(title='',url=''){
+  const wrap=document.createElement('div');
+  wrap.className='extra-video-item';
+  wrap.style.cssText='display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:10px 0;padding:12px;border:1px solid #dadce0;border-radius:8px';
+  wrap.innerHTML='<div><label>Video heading</label><input class="extra-video-title" placeholder="e.g. Hanatan Cover"></div><div><label>YouTube video ID or URL</label><input class="extra-video-url" placeholder="Video ID or URL"></div><button type="button" class="remove-video">Remove</button>';
+  wrap.querySelector('.extra-video-title').value=title;
+  wrap.querySelector('.extra-video-url').value=url;
+  wrap.querySelector('.remove-video').addEventListener('click',()=>{
+  wrap.remove();
+  scheduleLiveGenerate();
+});
+  $('extraVideos').appendChild(wrap);
+}
+function updatePreview(){
+  const frame=$('preview');
+  if(!frame)return;
+  const html=$('output').value||'';
+  const baseStyles=`<style>
+    html,body{margin:0;padding:16px;background:#fff;color:#202124;font-family:Arial,sans-serif;line-height:1.5}
+    img{max-width:100%;height:auto}
+    iframe{max-width:100%}
+    table{max-width:100%;border-collapse:collapse}
+    .preview-empty{color:#777;text-align:center;padding:40px 12px}
+  </style>`;
+  try{frame.srcdoc=html ? baseStyles+html : baseStyles+'<div class="preview-empty">Start entering your post details to see the live preview.</div>';}catch(e){console.error('Preview update failed',e);}
+}
+
+function scheduleLiveGenerate(){
+  clearTimeout(window.__liveGenerateTimer);
+  window.__liveGenerateTimer=setTimeout(gen,120);
+}
+
+function setRelation(type){
+  $('relationType').value=type;
+  $('animeRelation').style.display=type==='anime'?'grid':'none';
+  $('albumRelation').style.display=type==='album'?'grid':'none';
+  document.querySelectorAll('.relation-choice').forEach(btn=>{
+    const active=btn.dataset.relation===type;
+    btn.classList.toggle('primary',active);
+    btn.setAttribute('aria-pressed',String(active));
+  });
+  try{localStorage.setItem('bloggerGen_relationType',type)}catch(e){}
+}
+document.querySelectorAll('.relation-choice').forEach(btn=>btn.addEventListener('click',()=>{
+  setRelation(btn.dataset.relation);
+  scheduleLiveGenerate();
+}));
+try{setRelation(localStorage.getItem('bloggerGen_relationType')||'none')}catch(e){setRelation('none')}
+setTimeout(gen,0);
+$('addVideo').addEventListener('click',()=>{
+  addVideoItem();
+  scheduleLiveGenerate();
+});
+
+ids.forEach(id=>{
+  $(id).addEventListener('input',scheduleLiveGenerate);
+  $(id).addEventListener('change',scheduleLiveGenerate);
+});
+
+document.addEventListener('input',e=>{
+  if(e.target.matches('.extra-video-title,.extra-video-url')) scheduleLiveGenerate();
+});
+document.addEventListener('change',e=>{
+  if(e.target.matches('.extra-video-title,.extra-video-url')) scheduleLiveGenerate();
+});
+
+$('generate').addEventListener('click',()=>{
+  try{gen();}
+  catch(e){console.error(e);}
+});
+$('copy').addEventListener('click',async()=>{
+  try{
+    if(!$('output').value)gen();
+    const value=$('output').value;
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(value);
+    }else{
+      $('output').focus();
+      $('output').select();
+      document.execCommand('copy');
+      $('output').setSelectionRange(0,0);
+    }
+    $('status').textContent='HTML copied to clipboard.';
+  }catch(e){
+    $('output').focus();
+    $('output').select();
+    $('status').textContent='Copy failed. Press Ctrl+C to copy the selected HTML.';
+  }
+});
+$('download').addEventListener('click',()=>{
+  try{
+    if(!$('output').value)gen();
+    const blob=new Blob([$('output').value],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='blogger-post-template.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    $('status').textContent='HTML file downloaded.';
+  }catch(e){
+    console.error(e);
+    $('status').textContent='Download failed: '+e.message;
+  }
+});
+$('clear').addEventListener('click',()=>{
+  if(!confirm('Clear all generator fields and saved values in this browser?'))return;
+  ids.forEach(id=>{
+    $(id).value='';
+    try{localStorage.removeItem('bloggerGen_'+id)}catch(e){}
+  });
+  $('imgWidth').value=320;
+  $('imgHeight').value=720;
+  $('output').value='';
+  updatePreview();
+  $('status').textContent='Fields cleared.';
+});
+$('togglePreview').addEventListener('click',()=>{
+  const wrap=$('previewWrap');
+  const hidden=wrap.classList.toggle('preview-hidden');
+  $('togglePreview').textContent=hidden?'Show Preview':'Hide Preview';
+  $('togglePreview').setAttribute('aria-expanded',String(!hidden));
+});
+</script>
+</body>
+</html>
