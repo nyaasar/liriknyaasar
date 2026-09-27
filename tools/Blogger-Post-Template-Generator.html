@@ -89,7 +89,23 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
 button{border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:650;cursor:pointer;background:var(--button-bg);color:var(--button-text)}
 button.primary{background:#1967d2;color:white}button:hover{filter:brightness(.96)}
-#output{min-height:500px;max-height:75vh;font-family:ui-monospace,monospace;font-size:12px;white-space:pre;overflow:auto}
+.wrap-toggle{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:650;margin:0;padding:9px 4px;color:var(--text)}
+.wrap-toggle input{width:auto;margin:0}
+.code-editor{position:relative;min-height:500px;max-height:75vh;height:500px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);overflow:hidden;resize:vertical}
+.code-editor pre,.code-editor textarea{position:absolute;inset:0;margin:0;padding:10px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.5;box-sizing:border-box;white-space:pre;tab-size:2}
+.code-editor pre{overflow:auto;color:var(--text);background:transparent;pointer-events:none}
+.code-editor pre code{white-space:inherit;font-family:inherit}
+.code-editor textarea{overflow:auto;background:transparent;color:transparent;caret-color:var(--text);-webkit-text-fill-color:transparent;resize:none;border:0;outline:none}
+.code-editor textarea::placeholder{color:var(--muted);-webkit-text-fill-color:var(--muted);opacity:1}
+.code-editor.wrap-lines pre,.code-editor.wrap-lines textarea{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}
+.tok-tag{color:#c2185b;font-weight:650}
+.tok-attr{color:#c26100}
+.tok-value{color:#1a7f37}
+.tok-comment{color:var(--muted);font-style:italic}
+.tok-punct{color:var(--muted)}
+html[data-ui-theme="dark"] .tok-tag{color:#ff8ab8}
+html[data-ui-theme="dark"] .tok-attr{color:#ffb86b}
+html[data-ui-theme="dark"] .tok-value{color:#8ee08e}
 .status{font-size:.85rem;color:#137333;min-height:1.2em}
 details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
@@ -135,15 +151,15 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
   <button type="button" class="relation-choice" data-relation="album" aria-pressed="false">Album</button>
 </div>
 <input type="hidden" id="relationType" value="none">
-<div id="animeRelation" class="fields" style="display:none">
-  <div class="full"><label for="anime">Anime / series</label><input id="anime" placeholder="Lord El-Melloi II Sei no Jikenbo: Rail Zeppelin Grace Note"></div>
-  <div><label for="animeUrl">Anime database URL</label><input id="animeUrl" placeholder="https://myanimelist.net/anime/..."></div>
-  <div><label for="themeType">Theme type</label><input id="themeType" placeholder="Ending Theme"></div>
+<div id="animeRelation" style="display:none">
+  <div id="animeList"></div>
+  <button type="button" id="addAnime">+ Add another anime</button>
+  <p class="hint">Add as many anime/series relations as needed if this song is used in more than one.</p>
 </div>
-<div id="albumRelation" class="fields" style="display:none">
-  <div class="full"><label for="albumName">Album Name</label><input id="albumName" placeholder="Album name"></div>
-  <div><label for="albumUrl">VGMdb/Wiki database URL</label><input id="albumUrl" placeholder="https://vgmdb.net/album/..."></div>
-  <div><label for="albumYear">Year</label><input id="albumYear" inputmode="numeric" placeholder="2025"></div>
+<div id="albumRelation" style="display:none">
+  <div id="albumList"></div>
+  <button type="button" id="addAlbum">+ Add another album</button>
+  <p class="hint">Add as many albums as needed if this track appears on more than one release.</p>
 </div>
 </div>
 <div class="full"><label for="youtube">Main YouTube video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
@@ -171,13 +187,17 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div class="output-header">
   <h2>Generated Blogger HTML</h2>
   <div class="output-actions">
+    <label class="wrap-toggle" for="wrapOutput"><input type="checkbox" id="wrapOutput">Wrap lines</label>
     <button type="button" id="copy">Copy HTML</button>
     <button type="button" id="download">Download .html</button>
     <button type="button" id="clear">Clear fields</button>
   </div>
 </div>
 <p class="hint">The HTML updates automatically as you edit the fields. Use the preview toggle when you want to check the rendered post. Copy the output and paste it into Blogger's HTML view.</p>
-<textarea id="output" spellcheck="false" placeholder="Your Blogger HTML will appear here..."></textarea>
+<div class="code-editor" id="outputEditor">
+  <pre aria-hidden="true"><code id="outputHighlight"></code></pre>
+  <textarea id="output" spellcheck="false" placeholder="Your Blogger HTML will appear here..." wrap="off"></textarea>
+</div>
 <div class="preview-title">
   <h3 style="margin:0">Live Preview</h3>
   <button type="button" id="togglePreview" aria-expanded="false">Show Preview</button>
@@ -206,7 +226,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 <script>
 const $ = id => document.getElementById(id);
-const ids=['image','imgWidth','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','anime','animeUrl','themeType','albumName','albumUrl','albumYear','youtube','kanji','romaji','translation','idns','notes'];
+const ids=['image','imgWidth','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
 const previewCss=$('previewCss');
 
 let uiTheme='light';
@@ -283,13 +303,23 @@ function gen(){
   h+='      <td class="nama_artis">'+($('artistJp').value?'<span class="mdlktgri1">'+esc($('artistJp').value)+'</span>':'')+'<span class="mdlktgri1">'+esc($('artist').value)+'</span></td>\n';
   let relation='-';
   if($('relationType').value==='anime'){
-    const name=$('anime').value.trim(), url=$('animeUrl').value.trim(), theme=$('themeType').value.trim();
-    const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
-    relation=(linked+(theme?(linked?' - ':'')+esc(theme):''))||'-';
+    const parts=[...document.querySelectorAll('#animeList .rel-item')].map(row=>{
+      const name=row.querySelector('.rel-anime-name').value.trim();
+      const url=row.querySelector('.rel-anime-url').value.trim();
+      const theme=row.querySelector('.rel-anime-theme').value.trim();
+      const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
+      return (linked+(theme?(linked?' - ':'')+esc(theme):''));
+    }).filter(Boolean);
+    relation=parts.length?parts.join('<br />'):'-';
   }else if($('relationType').value==='album'){
-    const name=$('albumName').value.trim(), url=$('albumUrl').value.trim(), year=$('albumYear').value.trim();
-    const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
-    relation=(linked+(year?(linked?' - ':'')+esc(year):''))||'-';
+    const parts=[...document.querySelectorAll('#albumList .rel-item')].map(row=>{
+      const name=row.querySelector('.rel-album-name').value.trim();
+      const url=row.querySelector('.rel-album-url').value.trim();
+      const year=row.querySelector('.rel-album-year').value.trim();
+      const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
+      return (linked+(year?(linked?' - ':'')+esc(year):''));
+    }).filter(Boolean);
+    relation=parts.length?parts.join('<br />'):'-';
   }
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
@@ -303,8 +333,99 @@ function gen(){
   if($('notes').value.trim())h+='  </div>\n';
   h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n</div>';
   $('output').value=h;
+  renderHighlight();
   updatePreview();
 }
+
+// --- Syntax-highlighted output preview -------------------------------
+function highlightHtml(rawStr){
+  const str=String(rawStr||'');
+  let out='',i=0;
+  const len=str.length;
+  while(i<len){
+    if(str.startsWith('<!--',i)){
+      let end=str.indexOf('-->',i);
+      end=end===-1?len:end+3;
+      out+='<span class="tok-comment">'+esc(str.slice(i,end))+'</span>';
+      i=end;
+      continue;
+    }
+    if(str[i]==='<'){
+      let end=str.indexOf('>',i);
+      if(end===-1){out+=esc(str.slice(i));i=len;continue;}
+      const tagText=str.slice(i,end+1);
+      const m=tagText.match(/^<(\/?)([a-zA-Z][\w:-]*)([\s\S]*?)(\/?)>$/);
+      if(m){
+        out+='<span class="tok-punct">&lt;'+m[1]+'</span>';
+        out+='<span class="tok-tag">'+esc(m[2])+'</span>';
+        const attrPart=m[3];
+        const attrRe=/([a-zA-Z_:][-\w:.]*)(\s*=\s*)("[^"]*"|'[^']*')|([a-zA-Z_:][-\w:.]*)/g;
+        let last=0,am;
+        while((am=attrRe.exec(attrPart))){
+          out+=esc(attrPart.slice(last,am.index));
+          if(am[1]){
+            out+='<span class="tok-attr">'+esc(am[1])+'</span>'+esc(am[2])+'<span class="tok-value">'+esc(am[3])+'</span>';
+          }else{
+            out+='<span class="tok-attr">'+esc(am[4])+'</span>';
+          }
+          last=attrRe.lastIndex;
+        }
+        out+=esc(attrPart.slice(last));
+        out+='<span class="tok-punct">'+esc(m[4])+'&gt;</span>';
+      }else{
+        out+=esc(tagText);
+      }
+      i=end+1;
+      continue;
+    }
+    let next=str.indexOf('<',i);
+    if(next===-1)next=len;
+    out+=esc(str.slice(i,next));
+    i=next;
+  }
+  return out;
+}
+function renderHighlight(){
+  const code=$('outputHighlight');
+  if(code)code.innerHTML=highlightHtml($('output').value);
+}
+function setOutputWrap(wrap){
+  const editor=$('outputEditor');
+  if(editor)editor.classList.toggle('wrap-lines',!!wrap);
+  const cb=$('wrapOutput');
+  if(cb)cb.checked=!!wrap;
+  try{localStorage.setItem('bloggerGen_wrapOutput',wrap?'1':'0')}catch(e){}
+}
+
+function addRelItem(container,cls,fields,className){
+  const wrap=document.createElement('div');
+  wrap.className='rel-item';
+  wrap.style.cssText='border:1px solid var(--border);border-radius:8px;padding:12px;margin:10px 0;background:var(--panel-bg)';
+  const fieldsHtml=fields.map(f=>'<div'+(f.full?' class="full"':'')+'><label>'+f.label+'</label><input class="'+f.cls+'" placeholder="'+f.placeholder+'"></div>').join('');
+  wrap.innerHTML='<div class="fields" style="margin-bottom:10px">'+fieldsHtml+'</div><button type="button" class="remove-rel">Remove</button>';
+  fields.forEach(f=>{wrap.querySelector('.'+f.cls).value=f.value||'';});
+  wrap.querySelector('.remove-rel').addEventListener('click',()=>{
+    wrap.remove();
+    scheduleLiveGenerate();
+  });
+  container.appendChild(wrap);
+  return wrap;
+}
+function addAnimeItem(name='',url='',theme=''){
+  addRelItem($('animeList'),'rel-anime',[
+    {label:'Anime / series',cls:'rel-anime-name',placeholder:'Lord El-Melloi II Sei no Jikenbo: Rail Zeppelin Grace Note',full:true,value:name},
+    {label:'Anime database URL',cls:'rel-anime-url',placeholder:'https://myanimelist.net/anime/...',value:url},
+    {label:'Theme type',cls:'rel-anime-theme',placeholder:'Ending Theme',value:theme}
+  ]);
+}
+function addAlbumItem(name='',url='',year=''){
+  addRelItem($('albumList'),'rel-album',[
+    {label:'Album Name',cls:'rel-album-name',placeholder:'Album name',full:true,value:name},
+    {label:'VGMdb/Wiki database URL',cls:'rel-album-url',placeholder:'https://vgmdb.net/album/...',value:url},
+    {label:'Year',cls:'rel-album-year',placeholder:'2025',value:year}
+  ]);
+}
+
 function addVideoItem(title='',url=''){
   const wrap=document.createElement('div');
   wrap.className='extra-video-item';
@@ -454,13 +575,15 @@ function scheduleLiveGenerate(){
 
 function setRelation(type){
   $('relationType').value=type;
-  $('animeRelation').style.display=type==='anime'?'grid':'none';
-  $('albumRelation').style.display=type==='album'?'grid':'none';
+  $('animeRelation').style.display=type==='anime'?'block':'none';
+  $('albumRelation').style.display=type==='album'?'block':'none';
   document.querySelectorAll('.relation-choice').forEach(btn=>{
     const active=btn.dataset.relation===type;
     btn.classList.toggle('primary',active);
     btn.setAttribute('aria-pressed',String(active));
   });
+  if(type==='anime' && $('animeList').children.length===0)addAnimeItem();
+  if(type==='album' && $('albumList').children.length===0)addAlbumItem();
   try{localStorage.setItem('bloggerGen_relationType',type)}catch(e){}
 }
 document.querySelectorAll('.relation-choice').forEach(btn=>btn.addEventListener('click',()=>{
@@ -473,6 +596,14 @@ $('addVideo').addEventListener('click',()=>{
   addVideoItem();
   scheduleLiveGenerate();
 });
+$('addAnime').addEventListener('click',()=>{
+  addAnimeItem();
+  scheduleLiveGenerate();
+});
+$('addAlbum').addEventListener('click',()=>{
+  addAlbumItem();
+  scheduleLiveGenerate();
+});
 
 ids.forEach(id=>{
   $(id).addEventListener('input',scheduleLiveGenerate);
@@ -480,10 +611,24 @@ ids.forEach(id=>{
 });
 
 document.addEventListener('input',e=>{
-  if(e.target.matches('.extra-video-title,.extra-video-url')) scheduleLiveGenerate();
+  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-anime-name,.rel-anime-url,.rel-anime-theme,.rel-album-name,.rel-album-url,.rel-album-year')) scheduleLiveGenerate();
 });
 document.addEventListener('change',e=>{
-  if(e.target.matches('.extra-video-title,.extra-video-url')) scheduleLiveGenerate();
+  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-anime-name,.rel-anime-url,.rel-anime-theme,.rel-album-name,.rel-album-url,.rel-album-year')) scheduleLiveGenerate();
+});
+
+// Wrap-lines toggle for the generated HTML preview.
+let wrapOutputPref='0';
+try{wrapOutputPref=localStorage.getItem('bloggerGen_wrapOutput')||'0'}catch(e){}
+setOutputWrap(wrapOutputPref==='1');
+$('wrapOutput').addEventListener('change',()=>{
+  setOutputWrap($('wrapOutput').checked);
+});
+
+// Keep the highlighted <pre> scrolled in sync with the textarea.
+$('output').addEventListener('scroll',()=>{
+  const pre=document.querySelector('#outputEditor pre');
+  if(pre){pre.scrollTop=$('output').scrollTop;pre.scrollLeft=$('output').scrollLeft;}
 });
 
 // No separate Generate button exists in this UI; generation is already live.
@@ -532,6 +677,7 @@ $('clear').addEventListener('click',()=>{
   $('imgWidth').value=320;
   $('imgHeight').value=720;
   $('output').value='';
+  renderHighlight();
   $('previewCss').value='';
   try{localStorage.removeItem('bloggerGen_previewCss')}catch(e){}
   updatePreview();
