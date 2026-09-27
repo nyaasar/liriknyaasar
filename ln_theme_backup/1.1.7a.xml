@@ -841,13 +841,6 @@ width: calc(80vw - 40px) !important;
   inset: 0;
 }
 
-#ignielRelated ul li .thumb {
-  overflow: hidden;
-  line-height: 0;
-  border-radius: 7px;
-  aspect-ratio: 1 / 1;
-}
-
 #ignielRelated ul li a {
   display: block;
 }
@@ -1158,7 +1151,7 @@ urlactivepage=location.href,home_page="/";function looppagecurrentg(e){var a="";
 </b:includable>
       <b:includable id='thumbnail-post'>
   		<b:with value='data:post.featuredImage.isResizable ? resizeImage(data:post.featuredImage, 500, &quot;1:1&quot;) : data:post.thumbnail' var='image'>
-			<img class='thumbpst' expr:alt='data:post.title' expr:src='data:image'/>
+			<img class='thumbpst' expr:alt='data:post.title' expr:loading='data:post.isFirstPost ? &quot;eager&quot; : &quot;lazy&quot;' expr:src='data:image'/>
 		</b:with>
 </b:includable>
       <b:includable id='hot'>
@@ -1513,7 +1506,7 @@ BLOG_CMT_createIframe(&quot;<data:post.appRpcRelayPath/>&quot;- &quot;<data:post
 </div></b:includable>
       <b:includable id='commentAuthorAvatar'>
   <div class='g343 padding-10 text-center flex-sm'>
-    <img class='margin-bottom-7 radius-7 height-73 width-73 anon' expr:alt='data:comment.author' expr:src='resizeImage(data:comment.authorAvatarSrc, 73, &quot;1:1&quot;)' expr:title='data:comment.author'/>
+    <img class='margin-bottom-7 radius-7 height-73 width-73 anon' expr:alt='data:comment.author' expr:src='resizeImage(data:comment.authorAvatarSrc, 73, &quot;1:1&quot;)' expr:title='data:comment.author' loading='lazy'/>
     <div class='margin-left-10 text-left badge' expr:data='data:comment.authorUrl'>
       <b:class cond='data:post.author.name == data:comment.author' name='auth'/>
       <a class='text-body link-hover' expr:href='data:comment.authorUrl'><b:class cond='data:post.author.name == data:comment.author' name='auth'/><data:comment.author/></a>
@@ -1680,7 +1673,7 @@ Disqus
  <div class='comment_area'>
  <div class='comment_header'>
  <div class='comment_avatar'>
-<img alt='avatar' expr:src='data:comment.authorAvatarSrc' expr:title='data:comment.author'/>
+<img alt='avatar' expr:src='data:comment.authorAvatarSrc' expr:title='data:comment.author' loading='lazy'/>
 </div>
 <div class='comment_name'>
 <b:if cond='data:comment.authorUrl'>
@@ -1918,7 +1911,7 @@ var disqus_blogger_canonical_homepage_url = &quot;<data:blog.canonicalHomepageUr
   </span>
 </b:includable>
       <b:includable id='postBody' var='post'>
-        <article class='fstyle-0d9 paddingtop2pt overflow-hidden'>
+        <article class='fstyle-0d9 paddingtop2pt overflow-hidden' id='post-content-body'>
     <data:post.body/>
 	<!-- Related Post Grid by igniel --><b:if cond='data:view.isPost'>
   <div id='ignielRelated'>
@@ -2107,7 +2100,7 @@ function ignielRelatedGrid() {
         postUrls[currentIndex] +
         '">';
 
-      html += '<img class="thumbpst" src="' +
+      html += '<img class="thumbpst" loading="lazy" src="' +
         imageUrl +
         '" alt="' +
         postTitles[currentIndex] +
@@ -2218,7 +2211,7 @@ function ignielRelatedGrid() {
   <b:if cond='data:post.author.aboutMe and data:view.isPost'>
     <div class='author-profile'>
       <b:if cond='data:post.author.authorPhoto.url'>
-        <img class='author-image' expr:src='data:post.author.authorPhoto.url' width='50px'/>
+        <img class='author-image' expr:src='data:post.author.authorPhoto.url' loading='lazy' width='50px'/>
         <div class='author-about'>
           <b:include data='post' name='aboutPostAuthor'/>
         </div>
@@ -3102,6 +3095,22 @@ $(document).ready(function(){
 });
 </script>
 </b:if>
+
+<script>
+//<![CDATA[
+// Lazy-load images and video embeds inside the post/page content
+// (this content comes from the post body itself, so it can't get a
+// loading="lazy" attribute added directly in the template).
+document.addEventListener('DOMContentLoaded', function () {
+  var contentBox = document.getElementById('post-content-body');
+  if (!contentBox) { return; }
+  var mediaEls = contentBox.querySelectorAll('img:not([loading]), iframe:not([loading])');
+  for (var i = 0; i < mediaEls.length; i++) {
+    mediaEls[i].setAttribute('loading', 'lazy');
+  }
+});
+//]]>
+</script>
 
   </body>
   </html><!-- Changelog dadakan
