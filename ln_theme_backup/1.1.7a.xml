@@ -786,7 +786,7 @@ width: calc(80vw - 40px) !important;
 }
 
 #ignielRelated h3.title:before {
-  content: '';
+  content: &#39;&#39;;
   display: block;
   position: relative;
   top: 12px;
@@ -836,7 +836,7 @@ width: calc(80vw - 40px) !important;
 }
 
 #ignielRelated ul li a.judul::after {
-  content: '';
+  content: &#39;&#39;;
   position: absolute;
   inset: 0;
 }
@@ -2167,8 +2167,6 @@ function ignielRelatedGrid() {
       <ul>
         <script>ignielRelatedGrid();</script>
       </ul>
-      <b:else/>
-      There is no other posts in this category.
     </b:if>
   </div>
 <div class='clear'/>
