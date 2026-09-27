@@ -86,6 +86,10 @@ label{display:block;font-size:.88rem;font-weight:650;margin-bottom:5px}
 input,textarea,select{width:100%;font:inherit;padding:10px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--text)}
 textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-family:ui-monospace,monospace;font-size:.9rem}
 .full{grid-column:1/-1}.hint{font-size:.8rem;color:var(--muted);margin:5px 0 0}
+.field-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.field-label-row label{margin-bottom:0}
+.paste-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
+.notes-toggle{margin:0}.notes-toggle input{width:auto}
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
 button{border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:650;cursor:pointer;background:var(--button-bg);color:var(--button-text)}
 button.primary{background:#1967d2;color:white}button:hover{filter:brightness(.96)}
@@ -167,16 +171,22 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <h3>Lyrics</h3>
 <p class="hint">Paste each language line-by-line. Blank lines create stanza breaks. The combined tab interleaves Kanji → Romaji → Indonesian → optional singable translation.</p>
 <div class="fields">
-<div><label for="kanji">Kanji/Original Lyrics</label><textarea id="kanji" class="lyrics" placeholder="大事なものをいつも&#10;私は間違えるの"></textarea></div>
-<div><label for="romaji">Romaji</label><textarea id="romaji" class="lyrics" placeholder="daiji na mono wo itsumo&#10;watashi wa machigaeru no"></textarea></div>
-<div><label for="translation">Indonesian Translation</label><textarea id="translation" class="lyrics" placeholder="Selalu 'ku salah mengira&#10;apa-apa saja yang berharga"></textarea></div>
-<div><label for="idns">Singable Translation (Optional)</label><textarea id="idns" class="lyrics" placeholder="Optional singable version, line-by-line"></textarea></div>
+<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button></div><textarea id="kanji" class="lyrics" placeholder="大事なものをいつも&#10;私は間違えるの"></textarea></div>
+<div><div class="field-label-row"><label for="romaji">Romaji</label><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button></div><textarea id="romaji" class="lyrics" placeholder="daiji na mono wo itsumo&#10;watashi wa machigaeru no"></textarea></div>
+<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><button type="button" class="paste-btn" data-target="translation">📋 Paste</button></div><textarea id="translation" class="lyrics" placeholder="Selalu 'ku salah mengira&#10;apa-apa saja yang berharga"></textarea></div>
+<div><div class="field-label-row"><label for="idns">Singable Translation (Optional)</label><button type="button" class="paste-btn" data-target="idns">📋 Paste</button></div><textarea id="idns" class="lyrics" placeholder="Optional singable version, line-by-line"></textarea></div>
 </div>
 
 <h3>Optional Content</h3>
 <div class="fields">
 
-<div class="full"><label for="notes">Notes/Explanation (HTML Allowed)</label><textarea id="notes" placeholder="Hibari; Sering dikenal dengan nama ..."></textarea></div>
+<div class="full">
+<div class="field-label-row">
+  <label for="notes">Notes/Explanation (HTML Allowed)</label>
+  <label class="wrap-toggle notes-toggle" for="notesEnabled"><input type="checkbox" id="notesEnabled">Enable</label>
+</div>
+<textarea id="notes" placeholder="Hibari; Sering dikenal dengan nama ..." style="display:none"></textarea>
+</div>
 <div class="full"><label>Additional YouTube Videos/Versions (Optional)</label><div id="extraVideos"></div><button type="button" id="addVideo">+ Add another video</button><p class="hint">Add as many covers, alternate versions, or streams as needed. Each item can have its own heading and video ID or URL.</p></div>
 </div>
 <div class="status" id="status" aria-live="polite"></div>
@@ -261,6 +271,41 @@ ids.forEach(id=>{
   try{$(id).value=localStorage.getItem('bloggerGen_'+id) ?? $(id).value;}catch(e){}
   $(id).addEventListener('input',()=>{try{localStorage.setItem('bloggerGen_'+id,$(id).value)}catch(e){}});
 });
+
+// Notes/Explanation is off by default; the field only appears (and is only
+// included in the generated HTML) once explicitly enabled.
+function setNotesEnabled(on){
+  const enabled=!!on;
+  $('notesEnabled').checked=enabled;
+  $('notes').style.display=enabled?'':'none';
+  try{localStorage.setItem('bloggerGen_notesEnabled',enabled?'1':'0')}catch(e){}
+}
+let notesEnabledPref=false;
+try{notesEnabledPref=localStorage.getItem('bloggerGen_notesEnabled')==='1';}catch(e){}
+setNotesEnabled(notesEnabledPref);
+$('notesEnabled').addEventListener('change',()=>{
+  setNotesEnabled($('notesEnabled').checked);
+  scheduleLiveGenerate();
+});
+
+// Paste buttons for the Lyrics textareas: read the clipboard directly
+// instead of requiring the user to click in and select existing text.
+document.querySelectorAll('.paste-btn').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    const ta=$(btn.dataset.target);
+    if(!ta)return;
+    try{
+      const text=await navigator.clipboard.readText();
+      ta.value=text;
+      ta.dispatchEvent(new Event('input',{bubbles:true}));
+      ta.focus();
+      const labelEl=btn.closest('.field-label-row')?.querySelector('label');
+      $('status').textContent='Pasted into '+(labelEl?labelEl.textContent:'field')+'.';
+    }catch(e){
+      $('status').textContent='Could not read clipboard. Click the field and press Ctrl+V (or allow clipboard access) instead.';
+    }
+  });
+});
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function attr(s){return esc(s).replace(/'/g,'&#39;');}
 function urlSafe(s){return esc(s).replace(/"/g,'%22');}
@@ -339,14 +384,18 @@ function gen(){
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
   h+='  <br />\n  <br />\n  <br />\n  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
-  if($('notes').value.trim())h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
-  extras.forEach(v=>{
-    h+='    <br /><br /><br />\n';
-    if(v.title)h+='    <span style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
-    h+='    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
-  });
-  if($('notes').value.trim())h+='  </div>\n';
-  h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n</div>';
+  const notesOn=$('notesEnabled').checked && $('notes').value.trim();
+  if(notesOn || extras.length){
+    if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
+    extras.forEach(v=>{
+      h+='    <br /><br /><br />\n';
+      if(v.title)h+='    <span style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
+      h+='    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
+    });
+    if(notesOn)h+='  </div>\n';
+    h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  }
+  h+='</div>';
   $('output').value=h;
   renderHighlight();
   updatePreview();
@@ -690,6 +739,7 @@ $('clear').addEventListener('click',()=>{
     try{localStorage.removeItem('bloggerGen_'+id)}catch(e){}
   });
   $('imgHeight').value=720;
+  setNotesEnabled(false);
   $('output').value='';
   renderHighlight();
   $('previewCss').value='';
