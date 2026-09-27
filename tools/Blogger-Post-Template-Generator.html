@@ -144,8 +144,8 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div><label for="titleOther">Title Translation (Indonesian)</label><input id="titleOther" placeholder="(Burung Sanma)"></div>
 <div><label for="titleTooltip">Original Title Tooltip (Transliteration)</label><input id="titleTooltip" placeholder="Hibari"></div>
 <div><label for="titleOtherTooltip">Indonesian Title Tooltip (English) </label><input id="titleOtherTooltip" placeholder="Skylarks"></div>
-<div><label for="artist">Artist</label><input id="artist" placeholder="ASCA"></div>
-<div><label for="artistJp">Artist in Original Script (Optional)</label><input id="artistJp"></div>
+<div><label for="artist">Artist (Latin)</label><input id="artist" placeholder="Aimyon"></div>
+<div><label for="artistJp">Artist in Original Script (Optional)</label><input id="artistJp" placeholder="あいみょん"></div>
 <div class="full">
 <label>Relation Section (Optional)</label>
 <div class="actions" style="margin:6px 0 12px">
@@ -171,10 +171,10 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <h3>Lyrics</h3>
 <p class="hint">Paste each language line-by-line. Blank lines create stanza breaks. The combined tab interleaves Kanji → Romaji → Indonesian → optional singable translation.</p>
 <div class="fields">
-<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button></div><textarea id="kanji" class="lyrics" placeholder="大事なものをいつも&#10;私は間違えるの"></textarea></div>
-<div><div class="field-label-row"><label for="romaji">Romaji</label><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button></div><textarea id="romaji" class="lyrics" placeholder="daiji na mono wo itsumo&#10;watashi wa machigaeru no"></textarea></div>
-<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><button type="button" class="paste-btn" data-target="translation">📋 Paste</button></div><textarea id="translation" class="lyrics" placeholder="Selalu 'ku salah mengira&#10;apa-apa saja yang berharga"></textarea></div>
-<div><div class="field-label-row"><label for="idns">Singable Translation (Optional)</label><button type="button" class="paste-btn" data-target="idns">📋 Paste</button></div><textarea id="idns" class="lyrics" placeholder="Optional singable version, line-by-line"></textarea></div>
+<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea></div>
+<div><div class="field-label-row"><label for="romaji">Romaji</label><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea></div>
+<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><button type="button" class="paste-btn" data-target="translation">📋 Paste</button></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea></div>
+<div><div class="field-label-row"><label for="idns">Singable Translation (Optional)</label><button type="button" class="paste-btn" data-target="idns">📋 Paste</button></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea></div>
 </div>
 
 <h3>Optional Content</h3>
@@ -196,6 +196,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
   <h2>Generated Blogger HTML:</h2>
   <div class="output-actions">
     <label class="wrap-toggle" for="wrapOutput"><input type="checkbox" id="wrapOutput">Wrap lines</label>
+    <button type="button" id="regenerate" style="display:none">Regenerate from Fields</button>
     <button type="button" id="copy">Copy HTML</button>
     <button type="button" id="download">Download as File</button>
     <button type="button" id="clear">Clear Fields</button>
@@ -236,6 +237,9 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <script>
 const $ = id => document.getElementById(id);
 const ids=['image','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
+// True once the user has typed directly into the output box; while true,
+// gen() (triggered by form-field edits) stops overwriting their edits.
+let manuallyEdited=false;
 const previewCss=$('previewCss');
 
 let uiTheme='light';
@@ -360,7 +364,7 @@ function gen(){
   if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'"><b>'+esc(jp)+'</b></span2><br />\n';
   if(other)h+='    <span2 style="font-size: large;" title="'+attr($('titleOtherTooltip').value)+'"><b>'+esc(other)+'</b></span2><br />\n';
   h+='  </div>\n  <br />\n  <br />\n  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+esc(jp)+'</span><span class="mdlktgri2">'+esc($('titleTooltip').value)+'</span></td>\n';
-  h+='      <td class="nama_artis">'+($('artistJp').value?'<span class="mdlktgri1">'+esc($('artistJp').value)+'</span>':'')+'<span class="mdlktgri1">'+esc($('artist').value)+'</span></td>\n';
+  h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1">'+esc($('artistJp').value)+'</span><span class="mdlktgri2">'+esc($('artist').value)+'</span>'):('<span class="mdlktgri1">'+esc($('artist').value)+'</span>'))+'</td>\n';
   let relation='-';
   if($('relationType').value==='anime'){
     const parts=[...document.querySelectorAll('#animeList .rel-item')].map(row=>{
@@ -381,7 +385,7 @@ function gen(){
     }).filter(Boolean);
     relation=parts.length?parts.join('<br />'):'-';
   }
-  h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n  <br />\n  <br />\n';
+  h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n  <!--more-->\n  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
   h+='  <br />\n  <br />\n  <br />\n  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
@@ -396,7 +400,7 @@ function gen(){
     h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   }
   h+='</div>';
-  $('output').value=h;
+  if(!manuallyEdited)$('output').value=h;
   renderHighlight();
   updatePreview();
 }
@@ -695,6 +699,25 @@ $('output').addEventListener('scroll',()=>{
   if(pre){pre.scrollTop=$('output').scrollTop;pre.scrollLeft=$('output').scrollLeft;}
 });
 
+// Manual edits to the output box are respected: typing here marks the
+// output as manually edited so gen() (run on form-field changes) stops
+// overwriting it, while still keeping the highlight and Live Preview in
+// sync with whatever is actually in the box.
+$('output').addEventListener('input',()=>{
+  const wasManuallyEdited=manuallyEdited;
+  manuallyEdited=true;
+  renderHighlight();
+  updatePreview();
+  $('regenerate').style.display='';
+  if(!wasManuallyEdited)$('status').textContent='Editing manually — form changes won\'t overwrite this until you click Regenerate.';
+});
+$('regenerate').addEventListener('click',()=>{
+  manuallyEdited=false;
+  $('regenerate').style.display='none';
+  gen();
+  $('status').textContent='Regenerated from the form fields.';
+});
+
 // No separate Generate button exists in this UI; generation is already live.
 $('copy').addEventListener('click',async()=>{
   try{
@@ -740,6 +763,8 @@ $('clear').addEventListener('click',()=>{
   });
   $('imgHeight').value=720;
   setNotesEnabled(false);
+  manuallyEdited=false;
+  $('regenerate').style.display='none';
   $('output').value='';
   renderHighlight();
   $('previewCss').value='';
