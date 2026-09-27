@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Offline-first: all CSS and JavaScript are embedded in this file; no external assets are required. -->
-<title>Blogger Post Template Generator</title>
+<title>LirikNyaasar Post Template Generator</title>
 <style>
 :root{
   font-family:system-ui,-apple-system,Segoe UI,sans-serif;
@@ -135,16 +135,16 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <h2>Post details</h2>
 <div class="fields">
 <div class="full"><label for="image">Image URL (full Blogger image URL)</label><input id="image" placeholder="https://blogger.googleusercontent.com/..."></div>
-<div><label for="imgWidth">Displayed image width</label><input id="imgWidth" type="number" value="320" min="1"></div>
-<div><label for="imgHeight">Original image height</label><input id="imgHeight" type="number" value="720" min="1"></div>
+<div><label for="imgWidth">Displayed Image Width</label><input id="imgWidth" type="number" value="320" min="1"></div>
+<div><label for="imgHeight">Original Image Height</label><input id="imgHeight" type="number" value="720" min="1"></div>
 <div class="full"><label for="titleJp">Title (Japanese)</label><input id="titleJp" placeholder="雲雀"></div>
-<div class="full"><label for="titleOther">Title (other / Indonesian)</label><input id="titleOther" placeholder="(Burung Sanma)"></div>
-<div><label for="titleTooltip">Japanese title tooltip</label><input id="titleTooltip" placeholder="Hibari"></div>
-<div><label for="titleOtherTooltip">Other title tooltip</label><input id="titleOtherTooltip" placeholder="Skylarks"></div>
+<div class="full"><label for="titleOther">Title (Other/Indonesian)</label><input id="titleOther" placeholder="(Burung Sanma)"></div>
+<div><label for="titleTooltip">Japanese Title Tooltip (English)</label><input id="titleTooltip" placeholder="Hibari"></div>
+<div><label for="titleOtherTooltip">Other Title Tooltip</label><input id="titleOtherTooltip" placeholder="Skylarks"></div>
 <div><label for="artist">Artist</label><input id="artist" placeholder="ASCA"></div>
-<div><label for="artistJp">Artist in original script (optional)</label><input id="artistJp"></div>
+<div><label for="artistJp">Artist in Original Script (Optional)</label><input id="artistJp"></div>
 <div class="full">
-<label>Relation section (optional)</label>
+<label>Relation Section (Optional)</label>
 <div class="actions" style="margin:6px 0 12px">
   <button type="button" class="relation-choice primary" data-relation="none" aria-pressed="true">None</button>
   <button type="button" class="relation-choice" data-relation="anime" aria-pressed="false">Anime</button>
@@ -153,16 +153,16 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <input type="hidden" id="relationType" value="none">
 <div id="animeRelation" style="display:none">
   <div id="animeList"></div>
-  <button type="button" id="addAnime">+ Add another anime</button>
+  <button type="button" id="addAnime">+ Add Another Anime</button>
   <p class="hint">Add as many anime/series relations as needed if this song is used in more than one.</p>
 </div>
 <div id="albumRelation" style="display:none">
   <div id="albumList"></div>
-  <button type="button" id="addAlbum">+ Add another album</button>
+  <button type="button" id="addAlbum">+ Add Another Album</button>
   <p class="hint">Add as many albums as needed if this track appears on more than one release.</p>
 </div>
 </div>
-<div class="full"><label for="youtube">Main YouTube video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
+<div class="full"><label for="youtube">Main YouTube Video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
 </div>
 
 <h3>Lyrics</h3>
@@ -170,15 +170,15 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div class="fields">
 <div><label for="kanji">Kanji / original lyrics</label><textarea id="kanji" class="lyrics" placeholder="大事なものをいつも&#10;私は間違えるの"></textarea></div>
 <div><label for="romaji">Romaji</label><textarea id="romaji" class="lyrics" placeholder="daiji na mono wo itsumo&#10;watashi wa machigaeru no"></textarea></div>
-<div><label for="translation">Indonesian translation</label><textarea id="translation" class="lyrics" placeholder="Selalu 'ku salah mengira&#10;apa-apa saja yang berharga"></textarea></div>
-<div><label for="idns">IDNS / singable translation (optional)</label><textarea id="idns" class="lyrics" placeholder="Optional singable version, line-by-line"></textarea></div>
+<div><label for="translation">Indonesian Translation</label><textarea id="translation" class="lyrics" placeholder="Selalu 'ku salah mengira&#10;apa-apa saja yang berharga"></textarea></div>
+<div><label for="idns">IDNS / Singable Translation (Optional)</label><textarea id="idns" class="lyrics" placeholder="Optional singable version, line-by-line"></textarea></div>
 </div>
 
-<h3>Optional content</h3>
+<h3>Optional Content</h3>
 <div class="fields">
 
-<div class="full"><label for="notes">Notes / explanation (HTML allowed)</label><textarea id="notes" placeholder="Hibari; Sering dikenal dengan nama ..."></textarea></div>
-<div class="full"><label>Additional YouTube videos / versions (optional)</label><div id="extraVideos"></div><button type="button" id="addVideo">+ Add another video</button><p class="hint">Add as many covers, alternate versions, or streams as needed. Each item can have its own heading and video ID or URL.</p></div>
+<div class="full"><label for="notes">Notes/Explanation (HTML Allowed)</label><textarea id="notes" placeholder="Hibari; Sering dikenal dengan nama ..."></textarea></div>
+<div class="full"><label>Additional YouTube Videos/Versions (Optional)</label><div id="extraVideos"></div><button type="button" id="addVideo">+ Add another video</button><p class="hint">Add as many covers, alternate versions, or streams as needed. Each item can have its own heading and video ID or URL.</p></div>
 </div>
 <div class="status" id="status" aria-live="polite"></div>
 </section>
@@ -189,8 +189,8 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
   <div class="output-actions">
     <label class="wrap-toggle" for="wrapOutput"><input type="checkbox" id="wrapOutput">Wrap lines</label>
     <button type="button" id="copy">Copy HTML</button>
-    <button type="button" id="download">Download .html</button>
-    <button type="button" id="clear">Clear fields</button>
+    <button type="button" id="download">Download as File</button>
+    <button type="button" id="clear">Clear Fields</button>
   </div>
 </div>
 <p class="hint">The HTML updates automatically as you edit the fields. Use the preview toggle when you want to check the rendered post. Copy the output and paste it into Blogger's HTML view.</p>
@@ -216,7 +216,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
     </div>
     <div id="previewCssStatus" class="preview-css-status" aria-live="polite"></div>
     <div class="preview-theme-actions">
-      <span class="hint">Preview theme:</span>
+      <span class="hint">Preview Theme:</span>
       <button type="button" class="preview-theme primary" data-theme="light">Light</button>
       <button type="button" class="preview-theme" data-theme="dark">Dark</button>
     </div>
@@ -276,11 +276,26 @@ function divLines(text,tab,interleave=false){
 function combined(){
   const a=lines('kanji'),b=lines('romaji'),c=lines('translation');
   const d=$('idns').value.trim()?lines('idns'):[];
-  const max=Math.max(a.length,b.length,c.length,d.length);let out='';
+  const max=Math.max(a.length,b.length,c.length,d.length);
+  let out='',pendingSeparator=false,lastWasBreak=false;
   for(let i=0;i<max;i++){
+    const vals=[a[i],b[i],c[i],d[i]].filter(v=>v!==undefined);
+    const isBreak=vals.length>0 && vals.every(v=>v.trim()==='');
+    if(isBreak){
+      // A blank line across every active lyric track marks a stanza break.
+      // Render it once as a blank line, a bullet separator, then a blank line
+      // (collapsing what would otherwise be one blank line per track).
+      if(!lastWasBreak)out+='<div id="tab1"><br /></div><div id="tab1">\u2022</div><div id="tab1"><br /></div>';
+      lastWasBreak=true;
+      pendingSeparator=false;
+      continue;
+    }
+    if(pendingSeparator)out+='<div id="tab1"><br /></div>';
     [a[i],b[i],c[i],d[i]].forEach(v=>{
       if(v!==undefined)out+=v.trim()===''?'<div id="tab1"><br /></div>':'<div id="tab1">'+esc(v)+'</div>';
     });
+    pendingSeparator=true;
+    lastWasBreak=false;
   }
   return out;
 }
