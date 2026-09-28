@@ -111,6 +111,9 @@ html[data-ui-theme="dark"] .tok-tag{color:#ff8ab8}
 html[data-ui-theme="dark"] .tok-attr{color:#ffb86b}
 html[data-ui-theme="dark"] .tok-value{color:#8ee08e}
 .status{font-size:.85rem;color:#137333;min-height:1.2em}
+.rel-other-row{display:flex;gap:8px;margin-bottom:8px}
+.rel-other-row input{flex:1}
+.rel-other-row button{flex:0 0 auto;padding:8px 13px}
 details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){
@@ -148,23 +151,11 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div><label for="artistJp">Artist in Original Script (Optional)</label><input id="artistJp" placeholder="あいみょん"></div>
 <div class="full">
 <label>Relation Section (Optional)</label>
-<div class="actions" style="margin:6px 0 12px">
-  <button type="button" class="relation-choice primary" data-relation="none" aria-pressed="true">None</button>
-  <button type="button" class="relation-choice" data-relation="anime" aria-pressed="false">Anime</button>
-  <button type="button" class="relation-choice" data-relation="album" aria-pressed="false">Album</button>
+<div id="relationList"></div>
+<button type="button" id="addRelation">+ Add another relation</button>
+<p class="hint">Add as many relations as needed and mix types freely. Pick Anime, Game, Album, or Others from each item's dropdown.</p>
 </div>
-<input type="hidden" id="relationType" value="none">
-<div id="animeRelation" style="display:none">
-  <div id="animeList"></div>
-  <button type="button" id="addAnime">+ Add Another Anime</button>
-  <p class="hint">Add as many anime/series relations as needed if this song is used in more than one.</p>
-</div>
-<div id="albumRelation" style="display:none">
-  <div id="albumList"></div>
-  <button type="button" id="addAlbum">+ Add Another Album</button>
-  <p class="hint">Add as many albums as needed if this track appears on more than one release.</p>
-</div>
-</div>
+<div class="full"><label for="moreBreak">Read More Break Position (&lt;!--more--&gt;)</label><select id="moreBreak"><option value="before">Before the table</option><option value="after">After the table</option></select></div>
 <div class="full"><label for="youtube">Main YouTube Video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
 </div>
 
@@ -356,6 +347,7 @@ function gen(){
   const ih=Math.max(1,parseInt($('imgHeight').value,10)||720);
   const main=videoId($('youtube').value);
   const extras=[...document.querySelectorAll('.extra-video-item')].map(row=>({title:row.querySelector('.extra-video-title').value.trim(),id:videoId(row.querySelector('.extra-video-url').value)})).filter(v=>v.id);
+  const moreBefore=$('moreBreak').value!=='after';
   let h='<div class="separator" style="clear: both; text-align: center;">\n';
   if(img){
     h+='  <div class="separator" style="clear: both;"><a href="'+attr(img)+'" style="display: block; padding: 1em 0; text-align: center;"><img alt="" border="0" style="max-height:'+ih+'px; width:auto; height:auto;" src="'+attr(img)+'"/></a></div>\n';
@@ -363,29 +355,10 @@ function gen(){
   h+='  <div style="text-align: center;">\n';
   if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'"><b>'+esc(jp)+'</b></span2><br />\n';
   if(other)h+='    <span2 style="font-size: large;" title="'+attr($('titleOtherTooltip').value)+'"><b>'+esc(other)+'</b></span2><br />\n';
-  h+='  </div>\n  <br />\n  <br />\n  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+esc(jp)+'</span><span class="mdlktgri2">'+esc($('titleTooltip').value)+'</span></td>\n';
+  h+='  </div>\n  <br />\n  <br />\n'+(moreBefore?'  <!--more-->\n':'')+'  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+esc(jp)+'</span><span class="mdlktgri2">'+esc($('titleTooltip').value)+'</span></td>\n';
   h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1">'+esc($('artistJp').value)+'</span><span class="mdlktgri2">'+esc($('artist').value)+'</span>'):('<span class="mdlktgri1">'+esc($('artist').value)+'</span>'))+'</td>\n';
-  let relation='-';
-  if($('relationType').value==='anime'){
-    const parts=[...document.querySelectorAll('#animeList .rel-item')].map(row=>{
-      const name=row.querySelector('.rel-anime-name').value.trim();
-      const url=row.querySelector('.rel-anime-url').value.trim();
-      const theme=row.querySelector('.rel-anime-theme').value.trim();
-      const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
-      return (linked+(theme?(linked?' - ':'')+esc(theme):''));
-    }).filter(Boolean);
-    relation=parts.length?parts.join('<br />'):'-';
-  }else if($('relationType').value==='album'){
-    const parts=[...document.querySelectorAll('#albumList .rel-item')].map(row=>{
-      const name=row.querySelector('.rel-album-name').value.trim();
-      const url=row.querySelector('.rel-album-url').value.trim();
-      const year=row.querySelector('.rel-album-year').value.trim();
-      const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
-      return (linked+(year?(linked?' - ':'')+esc(year):''));
-    }).filter(Boolean);
-    relation=parts.length?parts.join('<br />'):'-';
-  }
-  h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n  <!--more-->\n  <br />\n  <br />\n';
+  const relation=relationHtml();
+  h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
   h+='  <br />\n  <br />\n  <br />\n  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
@@ -465,33 +438,119 @@ function setOutputWrap(wrap){
   try{localStorage.setItem('bloggerGen_wrapOutput',wrap?'1':'0')}catch(e){}
 }
 
-function addRelItem(container,cls,fields,className){
+// Relation types. 'theme' types share name/URL/theme inputs, 'album' uses
+// name/URL/year/track, and 'other' is a free list of blank inputs.
+const REL_TYPES={
+  anime:{heading:'Anime',kind:'theme',nameLabel:'Anime / series',namePh:'Lord El-Melloi II Sei no Jikenbo: Rail Zeppelin Grace Note',urlLabel:'Anime database URL',urlPh:'https://myanimelist.net/anime/...',themePh:'Ending Theme'},
+  game:{heading:'Game',kind:'theme',nameLabel:'Game name',namePh:'Game title',urlLabel:'Game URL',urlPh:'https://store.steampowered.com/app/...',themePh:'Opening Theme'},
+  album:{heading:'Album',kind:'album',nameLabel:'Album name',namePh:'Album name',urlLabel:'VGMdb/Wiki database URL',urlPh:'https://vgmdb.net/album/...'},
+  other:{heading:'',kind:'other'}
+};
+function addOtherInput(wrap,value=''){
+  const row=document.createElement('div');
+  row.className='rel-other-row';
+  row.innerHTML='<input class="rel-other-input" placeholder="Type anything..."><button type="button" class="remove-other" aria-label="Remove input">&times;</button>';
+  row.querySelector('input').value=value;
+  row.querySelector('.remove-other').addEventListener('click',()=>{
+    row.remove();
+    scheduleLiveGenerate();
+  });
+  wrap.querySelector('.rel-other-list').appendChild(row);
+  return row;
+}
+function setRelItemType(wrap,type){
+  const t=REL_TYPES[type]||REL_TYPES.anime;
+  wrap.querySelector('.rel-main').style.display=t.kind==='other'?'none':'';
+  wrap.querySelector('.rel-other').style.display=t.kind==='other'?'':'none';
+  wrap.querySelector('.rel-theme-wrap').style.display=t.kind==='theme'?'':'none';
+  wrap.querySelector('.rel-album-wrap').style.display=t.kind==='album'?'':'none';
+  wrap.querySelector('.rel-url-wrap').classList.toggle('full',t.kind==='album');
+  if(t.kind==='other'){
+    if(!wrap.querySelector('.rel-other-row'))addOtherInput(wrap);
+    return;
+  }
+  wrap.querySelector('.rel-name-label').textContent=t.nameLabel;
+  wrap.querySelector('.rel-name').placeholder=t.namePh;
+  wrap.querySelector('.rel-url-label').textContent=t.urlLabel;
+  wrap.querySelector('.rel-url').placeholder=t.urlPh;
+  if(t.themePh)wrap.querySelector('.rel-theme').placeholder=t.themePh;
+}
+function addRelationItem(type='anime'){
   const wrap=document.createElement('div');
   wrap.className='rel-item';
   wrap.style.cssText='border:1px solid var(--border);border-radius:8px;padding:12px;margin:10px 0;background:var(--panel-bg)';
-  const fieldsHtml=fields.map(f=>'<div'+(f.full?' class="full"':'')+'><label>'+f.label+'</label><input class="'+f.cls+'" placeholder="'+f.placeholder+'"></div>').join('');
-  wrap.innerHTML='<div class="fields" style="margin-bottom:10px">'+fieldsHtml+'</div><button type="button" class="remove-rel">Remove</button>';
-  fields.forEach(f=>{wrap.querySelector('.'+f.cls).value=f.value||'';});
+  wrap.innerHTML=
+    '<div class="fields" style="margin-bottom:10px">'+
+      '<div class="full"><label>Relation type</label><select class="rel-type">'+
+        '<option value="anime">Anime</option><option value="game">Game</option><option value="album">Album</option><option value="other">Others</option>'+
+      '</select></div>'+
+    '</div>'+
+    '<div class="rel-main"><div class="fields" style="margin-bottom:10px">'+
+      '<div class="full"><label class="rel-name-label">Name</label><input class="rel-name"></div>'+
+      '<div class="rel-url-wrap"><label class="rel-url-label">URL</label><input class="rel-url"></div>'+
+      '<div class="rel-theme-wrap"><label>Theme type</label><input class="rel-theme"></div>'+
+      '<div class="rel-album-wrap"><div class="fields">'+
+        '<div><label>Year</label><input class="rel-year" placeholder="2025"></div>'+
+        '<div><label>Track number</label><input class="rel-track" placeholder="Track 4"></div>'+
+      '</div></div>'+
+    '</div></div>'+
+    '<div class="rel-other" style="display:none">'+
+      '<div class="rel-other-list"></div>'+
+      '<button type="button" class="add-other-input" style="margin-bottom:10px">+ Add input</button>'+
+    '</div>'+
+    '<div><button type="button" class="remove-rel">Remove relation</button></div>';
+  const sel=wrap.querySelector('.rel-type');
+  sel.value=type;
+  setRelItemType(wrap,type);
+  sel.addEventListener('change',()=>{
+    setRelItemType(wrap,sel.value);
+    scheduleLiveGenerate();
+  });
+  wrap.querySelector('.add-other-input').addEventListener('click',()=>{
+    addOtherInput(wrap).querySelector('input').focus();
+    scheduleLiveGenerate();
+  });
   wrap.querySelector('.remove-rel').addEventListener('click',()=>{
     wrap.remove();
     scheduleLiveGenerate();
   });
-  container.appendChild(wrap);
+  $('relationList').appendChild(wrap);
   return wrap;
 }
-function addAnimeItem(name='',url='',theme=''){
-  addRelItem($('animeList'),'rel-anime',[
-    {label:'Anime / series',cls:'rel-anime-name',placeholder:'Lord El-Melloi II Sei no Jikenbo: Rail Zeppelin Grace Note',full:true,value:name},
-    {label:'Anime database URL',cls:'rel-anime-url',placeholder:'https://myanimelist.net/anime/...',value:url},
-    {label:'Theme type',cls:'rel-anime-theme',placeholder:'Ending Theme',value:theme}
-  ]);
-}
-function addAlbumItem(name='',url='',year=''){
-  addRelItem($('albumList'),'rel-album',[
-    {label:'Album Name',cls:'rel-album-name',placeholder:'Album name',full:true,value:name},
-    {label:'VGMdb/Wiki database URL',cls:'rel-album-url',placeholder:'https://vgmdb.net/album/...',value:url},
-    {label:'Year',cls:'rel-album-year',placeholder:'2025',value:year}
-  ]);
+// Builds the "Termasuk dalam" cell: items are grouped by type under a
+// "Type:" heading (Anime:, Game:, Album:); "Others" lines have no heading.
+function relationHtml(){
+  const groups=[],byType={};
+  document.querySelectorAll('#relationList .rel-item').forEach(row=>{
+    const type=row.querySelector('.rel-type').value;
+    const t=REL_TYPES[type]||REL_TYPES.anime;
+    const lines=[];
+    if(t.kind==='other'){
+      row.querySelectorAll('.rel-other-input').forEach(i=>{
+        const v=i.value.trim();
+        if(v)lines.push(esc(v));
+      });
+    }else{
+      const name=row.querySelector('.rel-name').value.trim();
+      const url=row.querySelector('.rel-url').value.trim();
+      const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
+      let line;
+      if(t.kind==='album'){
+        const year=row.querySelector('.rel-year').value.trim();
+        const track=row.querySelector('.rel-track').value.trim();
+        const titleYear=linked+(year?(linked?' ':'')+'('+esc(year)+')':'');
+        line=[titleYear,esc(track)].filter(Boolean).join(' - ');
+      }else{
+        line=[linked,esc(row.querySelector('.rel-theme').value.trim())].filter(Boolean).join(' - ');
+      }
+      if(line)lines.push(line);
+    }
+    if(!lines.length)return;
+    if(!byType[type]){byType[type]={heading:t.heading,lines:[]};groups.push(byType[type]);}
+    byType[type].lines.push(...lines);
+  });
+  if(!groups.length)return '-';
+  return groups.map(g=>(g.heading?g.heading+':<br />':'')+g.lines.join('<br />')).join('<br /><br />');
 }
 
 function addVideoItem(title='',url=''){
@@ -641,35 +700,18 @@ function scheduleLiveGenerate(){
   window.__liveGenerateTimer=setTimeout(gen,120);
 }
 
-function setRelation(type){
-  $('relationType').value=type;
-  $('animeRelation').style.display=type==='anime'?'block':'none';
-  $('albumRelation').style.display=type==='album'?'block':'none';
-  document.querySelectorAll('.relation-choice').forEach(btn=>{
-    const active=btn.dataset.relation===type;
-    btn.classList.toggle('primary',active);
-    btn.setAttribute('aria-pressed',String(active));
-  });
-  if(type==='anime' && $('animeList').children.length===0)addAnimeItem();
-  if(type==='album' && $('albumList').children.length===0)addAlbumItem();
-  try{localStorage.setItem('bloggerGen_relationType',type)}catch(e){}
-}
-document.querySelectorAll('.relation-choice').forEach(btn=>btn.addEventListener('click',()=>{
-  setRelation(btn.dataset.relation);
+try{$('moreBreak').value=localStorage.getItem('bloggerGen_moreBreak')==='after'?'after':'before'}catch(e){}
+$('moreBreak').addEventListener('change',()=>{
+  try{localStorage.setItem('bloggerGen_moreBreak',$('moreBreak').value)}catch(e){}
   scheduleLiveGenerate();
-}));
-try{setRelation(localStorage.getItem('bloggerGen_relationType')||'none')}catch(e){setRelation('none')}
+});
 setTimeout(gen,0);
 $('addVideo').addEventListener('click',()=>{
   addVideoItem();
   scheduleLiveGenerate();
 });
-$('addAnime').addEventListener('click',()=>{
-  addAnimeItem();
-  scheduleLiveGenerate();
-});
-$('addAlbum').addEventListener('click',()=>{
-  addAlbumItem();
+$('addRelation').addEventListener('click',()=>{
+  addRelationItem();
   scheduleLiveGenerate();
 });
 
@@ -679,10 +721,10 @@ ids.forEach(id=>{
 });
 
 document.addEventListener('input',e=>{
-  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-anime-name,.rel-anime-url,.rel-anime-theme,.rel-album-name,.rel-album-url,.rel-album-year')) scheduleLiveGenerate();
+  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-item input')) scheduleLiveGenerate();
 });
 document.addEventListener('change',e=>{
-  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-anime-name,.rel-anime-url,.rel-anime-theme,.rel-album-name,.rel-album-url,.rel-album-year')) scheduleLiveGenerate();
+  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-item input,.rel-item select')) scheduleLiveGenerate();
 });
 
 // Wrap-lines toggle for the generated HTML preview.
@@ -762,6 +804,7 @@ $('clear').addEventListener('click',()=>{
     try{localStorage.removeItem('bloggerGen_'+id)}catch(e){}
   });
   $('imgHeight').value=720;
+  $('relationList').innerHTML='';
   setNotesEnabled(false);
   manuallyEdited=false;
   $('regenerate').style.display='none';
