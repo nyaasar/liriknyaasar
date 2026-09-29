@@ -90,6 +90,9 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .field-label-row label{margin-bottom:0}
 .paste-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
 .notes-toggle{margin:0}.notes-toggle input{width:auto}
+.update-row{display:flex;gap:8px;align-items:stretch}
+.update-row input{flex:1}
+.update-row button{flex:0 0 auto;padding:8px 14px}
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
 button{border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:650;cursor:pointer;background:var(--button-bg);color:var(--button-text)}
 button.primary{background:#1967d2;color:white}button:hover{filter:brightness(.96)}
@@ -142,7 +145,20 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <h2>Post Details:</h2>
 <div class="fields">
 <div><label for="image">Image URL (Full Blogger Image URL)</label><input id="image" placeholder="https://blogger.googleusercontent.com/..."></div>
-<div><label for="imgHeight">Displayed Image Max-Height (px)</label><input id="imgHeight" type="number" value="720" min="1"></div>
+<div><label for="imgHeight">Displayed Image Max-Height (px)</label><input id="imgHeight" type="number" value="320" min="1"></div>
+<div class="full">
+<label for="imgHref">Image Link Behaviour (href)</label>
+<select id="imgHref">
+<option value="same">Link to the image itself (default)</option>
+<option value="none">No link (image only)</option>
+<option value="custom">Custom URL</option>
+</select>
+<div id="imgHrefCustomWrap" style="display:none;margin-top:8px">
+<input id="imgHrefCustom" placeholder="https://...">
+<p class="hint">Leave blank to fall back to the image URL.</p>
+</div>
+<label class="wrap-toggle" id="imgTargetWrap" for="imgTarget"><input type="checkbox" id="imgTarget">Open link in a new tab (target="_blank")</label>
+</div>
 <div><label for="titleJp">Original Title (Kanji/Latin)</label><input id="titleJp" placeholder="雲雀"></div>
 <div><label for="titleOther">Title Translation (Indonesian)</label><input id="titleOther" placeholder="(Burung Sanma)"></div>
 <div><label for="titleTooltip">Original Title Tooltip (Transliteration)</label><input id="titleTooltip" placeholder="Hibari"></div>
@@ -157,6 +173,16 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 <div class="full"><label for="moreBreak">Read More Break Position (&lt;!--more--&gt;)</label><select id="moreBreak"><option value="before">Before the table</option><option value="after">After the table</option></select></div>
 <div class="full"><label for="youtube">Main YouTube Video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
+<div class="full">
+<div class="field-label-row">
+  <label for="updateDate">Lyrics Update Notification</label>
+  <label class="wrap-toggle notes-toggle" for="updateEnabled"><input type="checkbox" id="updateEnabled">Enable</label>
+</div>
+<div id="updateFields" style="display:none">
+  <div class="update-row"><input type="date" id="updateDate" lang="id"><button type="button" id="updateToday">Today</button></div>
+  <p class="hint" id="updateHint"></p>
+</div>
+</div>
 </div>
 
 <h3>Lyrics</h3>
@@ -227,7 +253,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 <script>
 const $ = id => document.getElementById(id);
-const ids=['image','imgHeight','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
+const ids=['image','imgHeight','imgHrefCustom','updateDate','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
 // True once the user has typed directly into the output box; while true,
 // gen() (triggered by form-field edits) stops overwriting their edits.
 let manuallyEdited=false;
@@ -280,6 +306,77 @@ try{notesEnabledPref=localStorage.getItem('bloggerGen_notesEnabled')==='1';}catc
 setNotesEnabled(notesEnabledPref);
 $('notesEnabled').addEventListener('change',()=>{
   setNotesEnabled($('notesEnabled').checked);
+  scheduleLiveGenerate();
+});
+
+// --- Lyrics update notification ("Terjemahan dimutakhirkan pada ...") ---
+const ID_DAYS=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const ID_MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+// Turns a date input value (YYYY-MM-DD) into "Kamis, 21 Maret 2024".
+function idDate(v){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');
+  if(!m)return '';
+  const y=+m[1],mo=+m[2],d=+m[3];
+  const dt=new Date(y,mo-1,d);
+  if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return '';
+  return ID_DAYS[dt.getDay()]+', '+d+' '+ID_MONTHS[mo-1]+' '+y;
+}
+function todayIso(){
+  const t=new Date();
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+}
+function refreshUpdateHint(){
+  const txt=idDate($('updateDate').value);
+  $('updateHint').textContent=txt?'Output: Terjemahan dimutakhirkan pada '+txt+'.':'Pick a date to add "Terjemahan dimutakhirkan pada ..." above the lyrics table.';
+}
+function setUpdateEnabled(on){
+  const enabled=!!on;
+  $('updateEnabled').checked=enabled;
+  $('updateFields').style.display=enabled?'':'none';
+  try{localStorage.setItem('bloggerGen_updateEnabled',enabled?'1':'0')}catch(e){}
+}
+let updateEnabledPref=false;
+try{updateEnabledPref=localStorage.getItem('bloggerGen_updateEnabled')==='1';}catch(e){}
+setUpdateEnabled(updateEnabledPref);
+refreshUpdateHint();
+$('updateEnabled').addEventListener('change',()=>{
+  setUpdateEnabled($('updateEnabled').checked);
+  // Default to today's date the first time it is enabled with no date set.
+  if($('updateEnabled').checked && !$('updateDate').value){
+    $('updateDate').value=todayIso();
+    try{localStorage.setItem('bloggerGen_updateDate',$('updateDate').value)}catch(e){}
+  }
+  refreshUpdateHint();
+  scheduleLiveGenerate();
+});
+$('updateDate').addEventListener('input',refreshUpdateHint);
+$('updateDate').addEventListener('change',refreshUpdateHint);
+$('updateToday').addEventListener('click',()=>{
+  $('updateDate').value=todayIso();
+  $('updateDate').dispatchEvent(new Event('input',{bubbles:true}));
+});
+
+// --- Image link (href) behaviour ---
+// Like "Read More Break Position", this is a behaviour setting: it is
+// remembered in this browser and is not reset by "Clear Fields".
+function syncImgHrefUi(){
+  const mode=$('imgHref').value;
+  $('imgHrefCustomWrap').style.display=mode==='custom'?'':'none';
+  $('imgTargetWrap').style.display=mode==='none'?'none':'';
+}
+try{
+  const savedHref=localStorage.getItem('bloggerGen_imgHref');
+  if(['same','none','custom'].includes(savedHref))$('imgHref').value=savedHref;
+  $('imgTarget').checked=localStorage.getItem('bloggerGen_imgTarget')==='1';
+}catch(e){}
+syncImgHrefUi();
+$('imgHref').addEventListener('change',()=>{
+  try{localStorage.setItem('bloggerGen_imgHref',$('imgHref').value)}catch(e){}
+  syncImgHrefUi();
+  scheduleLiveGenerate();
+});
+$('imgTarget').addEventListener('change',()=>{
+  try{localStorage.setItem('bloggerGen_imgTarget',$('imgTarget').checked?'1':'0')}catch(e){}
   scheduleLiveGenerate();
 });
 
@@ -344,13 +441,23 @@ function tabBody(tab,id){
 }
 function gen(){
   const img=$('image').value.trim(), jp=$('titleJp').value, other=$('titleOther').value;
-  const ih=Math.max(1,parseInt($('imgHeight').value,10)||720);
+  const ih=Math.max(1,parseInt($('imgHeight').value,10)||320);
   const main=videoId($('youtube').value);
   const extras=[...document.querySelectorAll('.extra-video-item')].map(row=>({title:row.querySelector('.extra-video-title').value.trim(),id:videoId(row.querySelector('.extra-video-url').value)})).filter(v=>v.id);
   const moreBefore=$('moreBreak').value!=='after';
   let h='<div class="separator" style="clear: both; text-align: center;">\n';
   if(img){
-    h+='  <div class="separator" style="clear: both;"><a href="'+attr(img)+'" style="display: block; padding: 1em 0; text-align: center;"><img alt="" border="0" style="max-height:'+ih+'px; width:auto; height:auto;" src="'+attr(img)+'"/></a></div>\n';
+    const hrefMode=$('imgHref').value;
+    const hrefCustom=$('imgHrefCustom').value.trim();
+    const hrefUrl=hrefMode==='custom'?(hrefCustom||img):img;
+    const imgTag='<img alt="" border="0" style="max-height:'+ih+'px; width:auto; height:auto;" src="'+attr(img)+'"/>';
+    const boxStyle='display: block; padding: 1em 0; text-align: center;';
+    if(hrefMode==='none'){
+      h+='  <div class="separator" style="clear: both;"><div style="'+boxStyle+'">'+imgTag+'</div></div>\n';
+    }else{
+      const targetAttr=$('imgTarget').checked?' target="_blank" rel="noopener"':'';
+      h+='  <div class="separator" style="clear: both;"><a href="'+attr(hrefUrl)+'"'+targetAttr+' style="'+boxStyle+'">'+imgTag+'</a></div>\n';
+    }
   }else h+='  <!-- Add your image URL in the generator to include the post image. -->\n';
   h+='  <div style="text-align: center;">\n';
   if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'"><b>'+esc(jp)+'</b></span2><br />\n';
@@ -360,7 +467,8 @@ function gen(){
   const relation=relationHtml();
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
-  h+='  <br />\n  <br />\n  <br />\n  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  const updText=$('updateEnabled').checked?idDate($('updateDate').value):'';
+  h+=(updText?'  <br />\n  Terjemahan dimutakhirkan pada '+esc(updText)+'.<br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
   if(notesOn || extras.length){
     if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
@@ -803,9 +911,11 @@ $('clear').addEventListener('click',()=>{
     $(id).value='';
     try{localStorage.removeItem('bloggerGen_'+id)}catch(e){}
   });
-  $('imgHeight').value=720;
+  $('imgHeight').value=320;
   $('relationList').innerHTML='';
   setNotesEnabled(false);
+  setUpdateEnabled(false);
+  refreshUpdateHint();
   manuallyEdited=false;
   $('regenerate').style.display='none';
   $('output').value='';
