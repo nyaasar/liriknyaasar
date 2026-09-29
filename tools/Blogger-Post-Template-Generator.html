@@ -181,6 +181,11 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div id="updateFields" style="display:none">
   <div class="update-row"><input type="date" id="updateDate" lang="id"><button type="button" id="updateToday">Today</button></div>
   <p class="hint" id="updateHint"></p>
+  <label class="wrap-toggle" for="updateCustomEnabled"><input type="checkbox" id="updateCustomEnabled">Use a custom sentence</label>
+  <div id="updateCustomWrap" style="display:none;margin-top:8px">
+    <input id="updateCustom" placeholder="Terjemahan diperbarui pada {date}.">
+    <p class="hint">Put {date} where the date should appear (e.g. Kamis, 21 Maret 2024). Without {date}, the sentence is used exactly as typed. HTML is allowed. Leave blank to use the default sentence.</p>
+  </div>
 </div>
 </div>
 </div>
@@ -253,7 +258,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 <script>
 const $ = id => document.getElementById(id);
-const ids=['image','imgHeight','imgHrefCustom','updateDate','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
+const ids=['image','imgHeight','imgHrefCustom','updateDate','updateCustom','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
 // True once the user has typed directly into the output box; while true,
 // gen() (triggered by form-field edits) stops overwriting their edits.
 let manuallyEdited=false;
@@ -325,9 +330,25 @@ function todayIso(){
   const t=new Date();
   return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
 }
+// Builds the notification line (without surrounding markup); '' means "output nothing".
+function buildUpdateNotice(){
+  if(!$('updateEnabled').checked)return '';
+  const d=idDate($('updateDate').value);
+  if($('updateCustomEnabled').checked){
+    const c=$('updateCustom').value.trim();
+    if(c)return c.includes('{date}')?(d?c.split('{date}').join(d):''):c;
+  }
+  return d?'Terjemahan dimutakhirkan pada '+d+'.':'';
+}
 function refreshUpdateHint(){
-  const txt=idDate($('updateDate').value);
-  $('updateHint').textContent=txt?'Output: Terjemahan dimutakhirkan pada '+txt+'.':'Pick a date to add "Terjemahan dimutakhirkan pada ..." above the lyrics table.';
+  const n=buildUpdateNotice();
+  $('updateHint').textContent=n?'Output: '+n:'Pick a date to show the notification above the lyrics table.';
+}
+function setUpdateCustomEnabled(on){
+  const enabled=!!on;
+  $('updateCustomEnabled').checked=enabled;
+  $('updateCustomWrap').style.display=enabled?'':'none';
+  try{localStorage.setItem('bloggerGen_updateCustomEnabled',enabled?'1':'0')}catch(e){}
 }
 function setUpdateEnabled(on){
   const enabled=!!on;
@@ -338,7 +359,16 @@ function setUpdateEnabled(on){
 let updateEnabledPref=false;
 try{updateEnabledPref=localStorage.getItem('bloggerGen_updateEnabled')==='1';}catch(e){}
 setUpdateEnabled(updateEnabledPref);
+let updateCustomPref=false;
+try{updateCustomPref=localStorage.getItem('bloggerGen_updateCustomEnabled')==='1';}catch(e){}
+setUpdateCustomEnabled(updateCustomPref);
 refreshUpdateHint();
+$('updateCustomEnabled').addEventListener('change',()=>{
+  setUpdateCustomEnabled($('updateCustomEnabled').checked);
+  refreshUpdateHint();
+  scheduleLiveGenerate();
+});
+$('updateCustom').addEventListener('input',refreshUpdateHint);
 $('updateEnabled').addEventListener('change',()=>{
   setUpdateEnabled($('updateEnabled').checked);
   // Default to today's date the first time it is enabled with no date set.
@@ -467,8 +497,8 @@ function gen(){
   const relation=relationHtml();
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
-  const updText=$('updateEnabled').checked?idDate($('updateDate').value):'';
-  h+=(updText?'  <br />\n  Terjemahan dimutakhirkan pada '+esc(updText)+'.<br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  const updText=buildUpdateNotice();
+  h+=(updText?'  <br />\n  '+updText+'<br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
   if(notesOn || extras.length){
     if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
@@ -915,6 +945,7 @@ $('clear').addEventListener('click',()=>{
   $('relationList').innerHTML='';
   setNotesEnabled(false);
   setUpdateEnabled(false);
+  setUpdateCustomEnabled(false);
   refreshUpdateHint();
   manuallyEdited=false;
   $('regenerate').style.display='none';
