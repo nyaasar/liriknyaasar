@@ -239,10 +239,10 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div class="split-buttons"><button type="button" class="primary" id="splitRun">Split into boxes</button><button type="button" id="splitClear">Clear</button></div>
 </details>
 <div class="fields">
-<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea></div>
-<div><div class="field-label-row"><label for="romaji">Romaji</label><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea></div>
-<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><button type="button" class="paste-btn" data-target="translation">📋 Paste</button></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea></div>
-<div><div class="field-label-row"><label for="idns">Singable Translation (Optional)</label><button type="button" class="paste-btn" data-target="idns">📋 Paste</button></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea></div>
+<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><span class="split-actions"><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea></div>
+<div><div class="field-label-row"><label for="romaji">Romaji</label><span class="split-actions"><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button><button type="button" class="mini-btn" data-copy="romaji">Copy</button></span></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea></div>
+<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><span class="split-actions"><button type="button" class="paste-btn" data-target="translation">📋 Paste</button><button type="button" class="mini-btn" data-copy="translation">Copy</button></span></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea></div>
+<div><div class="field-label-row"><label for="idns">Singable Translation (Optional)</label><span class="split-actions"><button type="button" class="paste-btn" data-target="idns">📋 Paste</button><button type="button" class="mini-btn" data-copy="idns">Copy</button></span></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea></div>
 </div>
 
 <h3 class="post-only">Optional Content</h3>
@@ -712,6 +712,33 @@ $('splitRun').addEventListener('click',()=>{
     $(id).dispatchEvent(new Event('input',{bubbles:true}));
   });
   $('status').textContent='Split into '+names.join(', ')+' ('+r.rows+' line'+(r.rows===1?'':'s')+(r.bad?', '+r.bad+' misaligned':'')+').'+(manuallyEdited?' The output has manual edits, so click Regenerate to refresh it.':'');
+});
+
+// Copy buttons for the Lyrics textareas.
+document.querySelectorAll('[data-copy]').forEach(btn=>{
+  const original=btn.textContent;
+  btn.addEventListener('click',async()=>{
+    const ta=$(btn.dataset.copy);
+    if(!ta)return;
+    const name=btn.closest('.field-label-row')?.querySelector('label')?.textContent||'field';
+    if(!ta.value){$('status').textContent=name+' is empty.';return;}
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(ta.value);
+      }else{
+        ta.focus();
+        ta.select();
+        const ok=document.execCommand('copy');
+        ta.setSelectionRange(ta.value.length,ta.value.length);
+        if(!ok)throw new Error('copy command was rejected');
+      }
+      $('status').textContent=name+' copied to clipboard.';
+      btn.textContent='Copied!';
+      setTimeout(()=>{btn.textContent=original;},1200);
+    }catch(e){
+      $('status').textContent='Could not copy '+name+': '+e.message;
+    }
+  });
 });
 
 // Paste buttons for the Lyrics textareas: read the clipboard directly
