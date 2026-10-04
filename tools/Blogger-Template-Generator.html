@@ -87,7 +87,7 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .full{grid-column:1/-1}.hint{font-size:.8rem;color:var(--muted);margin:5px 0 0}
 .field-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
 .field-label-row label{margin-bottom:0}
-.paste-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
+.paste-btn,.mini-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
 .notes-toggle{margin:0}.notes-toggle input{width:auto}
 .header-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;flex:0 0 auto}
 .mode-switch{position:relative;display:inline-flex;align-items:center;gap:9px;margin:0;padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--panel-bg);color:var(--text);font-size:.88rem;font-weight:700;cursor:pointer;user-select:none;box-shadow:0 2px 7px #00000012}
@@ -100,6 +100,11 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .rearr-only{display:none}
 .rearr-options{margin:2px 0 12px}
 .rearr-options .wrap-toggle{margin-right:18px}
+.split-panel{border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--panel-bg);margin:0 0 14px}
+.split-actions{display:inline-flex;gap:6px}
+.split-langs{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin:6px 0 2px}
+.split-langs-label{font-size:.85rem;font-weight:700}
+.split-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 body.rearrange-mode .rearr-only{display:block}
 body.rearrange-mode .post-only{display:none!important}
 .update-row{display:flex;gap:8px;align-items:stretch}
@@ -146,7 +151,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <header class="app-header">
   <div>
     <h1>LirikNyaasar Template Generator</h1>
-    <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Template-Generator.html">your browser.</a></p>
+    <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Post-Template-Generator.html">your browser.</a></p>
   </div>
   <div class="header-controls">
     <label class="mode-switch" for="rearrangeMode" title="Output only the interleaved lyrics (Kanji, Romaji, Indonesian) instead of the full Blogger post">
@@ -218,6 +223,21 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <label class="wrap-toggle" for="rearrangePlain" title="Output plain text with ordinary line breaks instead of HTML"><input type="checkbox" id="rearrangePlain">Plain text (omit all HTML)</label>
 <label class="wrap-toggle" for="rearrangeBullets" title="Put a bullet between stanzas, like the post template's combined tab"><input type="checkbox" id="rearrangeBullets">Add &bull; between stanzas</label>
 </div>
+<details class="rearr-only split-panel" id="splitPanel">
+<summary>Split re-arranged lyrics back into the boxes</summary>
+<p class="hint">Paste lyrics that were already re-arranged (HTML or plain text, with or without &bull; markers), tick the languages they contain in their original order, then split. The ticked boxes below are overwritten.</p>
+<div class="field-label-row"><label for="splitSource">Re-arranged lyrics</label><span class="split-actions"><button type="button" class="mini-btn" id="splitPaste">&#128203; Paste</button><button type="button" class="mini-btn" id="splitUseOutput">Use current output</button></span></div>
+<textarea id="splitSource" class="lyrics" placeholder="Paste the re-arranged lyrics here ..."></textarea>
+<div class="split-langs">
+<span class="split-langs-label">Languages in the text, in order:</span>
+<label class="wrap-toggle"><input type="checkbox" class="split-lang" value="kanji" checked>Kanji/Original</label>
+<label class="wrap-toggle"><input type="checkbox" class="split-lang" value="romaji" checked>Romaji</label>
+<label class="wrap-toggle"><input type="checkbox" class="split-lang" value="translation" checked>Indonesian</label>
+<label class="wrap-toggle"><input type="checkbox" class="split-lang" value="idns">Singable</label>
+</div>
+<p class="hint" id="splitInfo"></p>
+<div class="split-buttons"><button type="button" class="primary" id="splitRun">Split into boxes</button><button type="button" id="splitClear">Clear</button></div>
+</details>
 <div class="fields">
 <div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea></div>
 <div><div class="field-label-row"><label for="romaji">Romaji</label><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea></div>
@@ -561,6 +581,137 @@ $('copyRendered').addEventListener('click',async()=>{
   }catch(e){
     $('status').textContent='Copy failed: '+e.message+'. Use Copy Code instead.';
   }
+});
+
+// --- Split re-arranged lyrics back into the lyric boxes ---------------------
+// The re-arranged text is one line per language, in a fixed order, with a blank
+// line after each line group and a bigger gap (or a bullet) between stanzas.
+// Reading it back is the same pattern in reverse, given which languages it holds.
+const SPLIT_NAMES={kanji:'Kanji/Original',romaji:'Romaji',translation:'Indonesian',idns:'Singable'};
+function splitSourceLines(raw){
+  let t=String(raw||'').replace(/\r/g,'');
+  // HTML output: <br /> becomes a line break, tags are dropped, entities decoded.
+  if(/<[a-z!\/][^>]*>/i.test(t)||/&(?:[a-z]+|#\d+);/i.test(t)){
+    t=t.replace(/<br\s*\/?>\n?/gi,'\n').replace(/<\/(?:div|p)>\n?/gi,'\n');
+    t=new DOMParser().parseFromString(t,'text/html').body.textContent;
+  }
+  return t.split('\n');
+}
+// Groups consecutive non-blank lines. A new group after 2+ blank lines or a
+// bullet line marks a stanza break (brk).
+function splitGroups(raw){
+  const groups=[];
+  let open=false,blanks=0,bullet=false;
+  splitSourceLines(raw).forEach(l=>{
+    if(l.trim()===''){blanks++;open=false;return;}
+    if(/^\s*\u2022\s*$/.test(l)){bullet=true;open=false;blanks=0;return;}
+    if(open){groups[groups.length-1].lines.push(l);return;}
+    groups.push({lines:[l],brk:groups.length>0&&(blanks>=2||bullet)});
+    open=true;blanks=0;bullet=false;
+  });
+  return groups;
+}
+function mostCommonSize(groups){
+  const freq={};
+  groups.forEach(g=>{freq[g.lines.length]=(freq[g.lines.length]||0)+1;});
+  let best=0,bestN=0;
+  Object.keys(freq).forEach(k=>{if(freq[k]>bestN){bestN=freq[k];best=+k;}});
+  return best;
+}
+// Splits into n tracks. Groups holding k*n lines (older output that skipped
+// some blank lines) are cut into k rows; stanza breaks become blank lines in
+// every track so the boxes stay aligned.
+function parseRearranged(raw,n){
+  const tracks=Array.from({length:n},()=>[]);
+  if(n<1)return {tracks,rows:0,bad:0,stanzas:0,common:0};
+  if(n===1){
+    let pending=false,rows=0,stanzas=0;
+    splitSourceLines(raw).forEach(l=>{
+      if(l.trim()===''||/^\s*\u2022\s*$/.test(l)){pending=true;return;}
+      if(pending&&tracks[0].length){tracks[0].push('');stanzas++;}
+      pending=false;
+      tracks[0].push(l);rows++;
+    });
+    return {tracks,rows,bad:0,stanzas,common:0};
+  }
+  const groups=splitGroups(raw);
+  let rows=0,bad=0,stanzas=0;
+  groups.forEach(g=>{
+    for(let i=0;i<g.lines.length;i+=n){
+      const chunk=g.lines.slice(i,i+n);
+      if(i===0&&g.brk){tracks.forEach(t=>t.push(''));stanzas++;}
+      if(chunk.length!==n)bad++;
+      for(let j=0;j<n;j++)tracks[j].push(chunk[j]!==undefined?chunk[j]:'');
+      rows++;
+    }
+  });
+  return {tracks,rows,bad,stanzas,common:mostCommonSize(groups)};
+}
+function selectedSplitLangs(){
+  return Array.from(document.querySelectorAll('.split-lang')).filter(c=>c.checked).map(c=>c.value);
+}
+function updateSplitInfo(){
+  const raw=$('splitSource').value;
+  const n=selectedSplitLangs().length;
+  let msg='';
+  if(!raw.trim())msg='';
+  else if(!n)msg='Tick at least one language.';
+  else{
+    const r=parseRearranged(raw,n);
+    if(!r.rows)msg='No lyric lines found.';
+    else if(n===1)msg='Found '+r.rows+' lines'+(r.stanzas?' and '+r.stanzas+' stanza break'+(r.stanzas===1?'':'s'):'')+'.';
+    else if(!r.bad)msg='Looks good: '+r.rows+' line groups across '+n+' languages'+(r.stanzas?', '+r.stanzas+' stanza break'+(r.stanzas===1?'':'s'):'')+'.';
+    else msg='Warning: '+r.bad+' line group'+(r.bad===1?' does':'s do')+' not have exactly '+n+' lines (most common size: '+r.common+'). Check which languages are ticked; unmatched rows will be padded with blank lines.';
+  }
+  $('splitInfo').textContent=msg;
+}
+// After loading new source text, tick as many languages as there are lines per
+// group. Prefer the boxes that currently hold text if that matches the count.
+function autoPickSplitLangs(){
+  const common=mostCommonSize(splitGroups($('splitSource').value));
+  if(common<2||common>4)return;
+  const boxes=['kanji','romaji','translation','idns'];
+  const filled=boxes.filter(id=>$(id).value.trim()!=='');
+  const pick=filled.length===common?filled:boxes.slice(0,common);
+  document.querySelectorAll('.split-lang').forEach(c=>{c.checked=pick.includes(c.value);});
+}
+function loadSplitSource(text,statusMsg){
+  $('splitSource').value=text;
+  autoPickSplitLangs();
+  updateSplitInfo();
+  $('status').textContent=statusMsg;
+}
+$('splitSource').addEventListener('input',updateSplitInfo);
+document.querySelectorAll('.split-lang').forEach(c=>c.addEventListener('change',updateSplitInfo));
+$('splitPaste').addEventListener('click',async()=>{
+  try{
+    loadSplitSource(await navigator.clipboard.readText(),'Pasted into the split box. Check the ticked languages, then click Split into boxes.');
+  }catch(e){
+    $('status').textContent='Could not read clipboard. Click the split box and press Ctrl+V instead.';
+  }
+});
+$('splitUseOutput').addEventListener('click',()=>{
+  if(!$('output').value.trim()){$('status').textContent='The output is empty.';return;}
+  loadSplitSource($('output').value,'Loaded the current output into the split box.');
+});
+$('splitClear').addEventListener('click',()=>{
+  $('splitSource').value='';
+  updateSplitInfo();
+});
+$('splitRun').addEventListener('click',()=>{
+  const sel=selectedSplitLangs();
+  if(!sel.length){$('status').textContent='Tick at least one language first.';return;}
+  const r=parseRearranged($('splitSource').value,sel.length);
+  if(!r.rows){$('status').textContent='Nothing to split. Paste re-arranged lyrics into the split box first.';return;}
+  const names=sel.map(id=>SPLIT_NAMES[id]);
+  const existing=sel.filter(id=>$(id).value.trim()!=='').map(id=>SPLIT_NAMES[id]);
+  if(existing.length && !confirm('This will replace the current text in: '+existing.join(', ')+'. Continue?'))return;
+  if(r.bad && !confirm(r.bad+' line group'+(r.bad===1?' does':'s do')+' not have exactly '+sel.length+' lines, so some rows will be misaligned. Split anyway?'))return;
+  sel.forEach((id,j)=>{
+    $(id).value=r.tracks[j].join('\n');
+    $(id).dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  $('status').textContent='Split into '+names.join(', ')+' ('+r.rows+' line'+(r.rows===1?'':'s')+(r.bad?', '+r.bad+' misaligned':'')+').'+(manuallyEdited?' The output has manual edits, so click Regenerate to refresh it.':'');
 });
 
 // Paste buttons for the Lyrics textareas: read the clipboard directly
