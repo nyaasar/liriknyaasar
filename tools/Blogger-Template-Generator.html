@@ -768,8 +768,12 @@ function videoId(v){
   return m?m[1]:v.replace(/[?&].*$/,'').replace(/\/$/,'');
 }
 function lines(id){return $(id).value.replace(/\r/g,'').split('\n');}
-function divLines(text,tab,interleave=false){
-  return text.map(line=>line.trim()===''?'<div id="'+tab+'"><br /></div>':'<div id="'+tab+'">'+esc(line)+'</div>').join('');
+// CSS class put on every singable lyric line (in the combined tab and the
+// singable tab) so it can be styled in the Blogger template, e.g. .lisingable{...}
+const SINGABLE_CLASS='lisingable';
+function divLines(text,tab,cls=''){
+  const c=cls?' class="'+cls+'"':'';
+  return text.map(line=>line.trim()===''?'<div id="'+tab+'"><br /></div>':'<div'+c+' id="'+tab+'">'+esc(line)+'</div>').join('');
 }
 function combined(){
   const a=lines('kanji'),b=lines('romaji'),c=lines('translation');
@@ -789,8 +793,8 @@ function combined(){
       continue;
     }
     if(pendingSeparator)out+='<div id="tab1"><br /></div>';
-    [a[i],b[i],c[i],d[i]].forEach(v=>{
-      if(v!==undefined)out+=v.trim()===''?'<div id="tab1"><br /></div>':'<div id="tab1">'+esc(v)+'</div>';
+    [a[i],b[i],c[i],d[i]].forEach((v,k)=>{
+      if(v!==undefined)out+=v.trim()===''?'<div id="tab1"><br /></div>':'<div'+(k===3?' class="'+SINGABLE_CLASS+'"':'')+' id="tab1">'+esc(v)+'</div>';
     });
     pendingSeparator=true;
     lastWasBreak=false;
@@ -835,7 +839,7 @@ function gen(){
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
   const updText=buildUpdateNotice();
-  h+=(updText?'  <br />\n  '+updText+'<br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5')+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  h+=(updText?'  <br />\n  '+updText+'<br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
   if(notesOn || extras.length){
     if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
