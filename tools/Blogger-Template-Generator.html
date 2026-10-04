@@ -89,6 +89,19 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .field-label-row label{margin-bottom:0}
 .paste-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
 .notes-toggle{margin:0}.notes-toggle input{width:auto}
+.header-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;flex:0 0 auto}
+.mode-switch{position:relative;display:inline-flex;align-items:center;gap:9px;margin:0;padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--panel-bg);color:var(--text);font-size:.88rem;font-weight:700;cursor:pointer;user-select:none;box-shadow:0 2px 7px #00000012}
+.mode-switch input{position:absolute;opacity:0;width:0;height:0;padding:0;border:0;margin:0}
+.mode-switch .track{position:relative;flex:0 0 auto;width:34px;height:19px;border-radius:999px;background:var(--input-border);transition:background .18s ease}
+.mode-switch .track::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:transform .18s ease}
+.mode-switch input:checked + .track{background:#1967d2}
+.mode-switch input:checked + .track::after{transform:translateX(15px)}
+.mode-switch input:focus-visible + .track{outline:3px solid #8ab4f8;outline-offset:2px}
+.rearr-only{display:none}
+.rearr-options{margin:2px 0 12px}
+.rearr-options .wrap-toggle{margin-right:18px}
+body.rearrange-mode .rearr-only{display:block}
+body.rearrange-mode .post-only{display:none!important}
 .update-row{display:flex;gap:8px;align-items:stretch}
 .update-row input{flex:1}
 .update-row button{flex:0 0 auto;padding:8px 14px}
@@ -118,6 +131,7 @@ html[data-ui-theme="dark"] .tok-value{color:#8ee08e}
 .rel-other-row button{flex:0 0 auto;padding:8px 13px}
 details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.app-header{flex-direction:column}.header-controls{justify-content:flex-start}}
 @media(max-width:560px){
   .extra-video-item{grid-template-columns:1fr!important}
   body{padding:12px}
@@ -134,15 +148,23 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
     <h1>LirikNyaasar Template Generator</h1>
     <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Post-Template-Generator.html">your browser.</a></p>
   </div>
-  <button type="button" id="toggleDarkMode" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">
-    <span class="theme-icon" aria-hidden="true">☾</span>
-    <span class="theme-label">Dark</span>
-  </button>
+  <div class="header-controls">
+    <label class="mode-switch" for="rearrangeMode" title="Output only the interleaved lyrics (Kanji, Romaji, Indonesian) instead of the full Blogger post">
+      <input type="checkbox" id="rearrangeMode" role="switch">
+      <span class="track" aria-hidden="true"></span>
+      <span>Re-arranger mode</span>
+    </label>
+    <button type="button" id="toggleDarkMode" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">
+      <span class="theme-icon" aria-hidden="true">☾</span>
+      <span class="theme-label">Dark</span>
+    </button>
+  </div>
 </header>
 <div class="layout">
 <section class="panel">
-<h2>Post Details:</h2>
-<div class="fields">
+<h2 class="post-only">Post Details:</h2>
+<h2 class="rearr-only">Lyrics Re-arranger:</h2>
+<div class="fields post-only">
 <div><label for="image">Image URL (Full Blogger Image URL)</label><input id="image" placeholder="https://blogger.googleusercontent.com/..."></div>
 <div><label for="imgHeight">Displayed Image Max-Height (px)</label><input id="imgHeight" type="number" value="320" min="1"></div>
 <div class="full">
@@ -189,8 +211,13 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 </div>
 
-<h3>Lyrics</h3>
-<p class="hint">Paste each language line-by-line. Blank lines create stanza breaks. The combined tab interleaves Kanji → Romaji → Indonesian → optional singable translation.</p>
+<h3 class="post-only">Lyrics</h3>
+<p class="hint post-only">Paste each language line-by-line. Blank lines create stanza breaks. The combined tab interleaves Kanji → Romaji → Indonesian → optional singable translation.</p>
+<p class="hint rearr-only">Paste each language line-by-line. Blank lines create stanza breaks. Lines are interleaved Kanji → Romaji → Indonesian → optional singable translation and output as plain &lt;br /&gt; text, with no post template around it. Leave a box empty to skip that language.</p>
+<div class="rearr-only rearr-options">
+<label class="wrap-toggle" for="rearrangePlain" title="Output plain text with ordinary line breaks instead of HTML"><input type="checkbox" id="rearrangePlain">Plain text (omit all HTML)</label>
+<label class="wrap-toggle" for="rearrangeBullets" title="Put a bullet between stanzas, like the post template's combined tab"><input type="checkbox" id="rearrangeBullets">Add &bull; between stanzas</label>
+</div>
 <div class="fields">
 <div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea></div>
 <div><div class="field-label-row"><label for="romaji">Romaji</label><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea></div>
@@ -198,8 +225,8 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div><div class="field-label-row"><label for="idns">Singable Translation (Optional)</label><button type="button" class="paste-btn" data-target="idns">📋 Paste</button></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea></div>
 </div>
 
-<h3>Optional Content</h3>
-<div class="fields">
+<h3 class="post-only">Optional Content</h3>
+<div class="fields post-only">
 
 <div class="full">
 <div class="field-label-row">
@@ -214,11 +241,12 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 
 <section class="panel preview-panel">
 <div class="output-header">
-  <h2>Generated Blogger HTML:</h2>
+  <h2 id="outputTitle">Generated Blogger HTML:</h2>
   <div class="output-actions">
     <label class="wrap-toggle" for="wrapOutput"><input type="checkbox" id="wrapOutput">Wrap lines</label>
     <button type="button" id="regenerate" style="display:none">Regenerate from Fields</button>
     <button type="button" id="copy">Copy HTML</button>
+    <button type="button" id="copyRendered" style="display:none" title="Copy the re-arranged lyrics as formatted text, like the Re-Arranger's Copy Output">Copy Rendered</button>
     <button type="button" id="download">Download as File</button>
     <button type="button" id="clear">Clear Fields</button>
   </div>
@@ -409,6 +437,132 @@ $('imgTarget').addEventListener('change',()=>{
   scheduleLiveGenerate();
 });
 
+// --- Re-arranger mode -------------------------------------------------
+// A switch that turns the generator into a lyrics re-arranger (modelled on the
+// standalone Re-Arranger tool): instead of the full Blogger post it outputs only
+// the lyric tracks interleaved line by line as plain <br /> text.
+let rearrangeMode=false;
+function setRearrangeMode(on){
+  rearrangeMode=!!on;
+  $('rearrangeMode').checked=rearrangeMode;
+  document.body.classList.toggle('rearrange-mode',rearrangeMode);
+  $('outputTitle').textContent=rearrangeMode?'Re-arranged Lyrics:':'Generated Blogger HTML:';
+  $('output').placeholder=rearrangeMode?'Your re-arranged lyrics will appear here...':'Your Blogger HTML will appear here...';
+  syncRearrangeUi();
+  try{localStorage.setItem('bloggerGen_rearrangeMode',rearrangeMode?'1':'0')}catch(e){}
+}
+// Plain-text output has no HTML to render, so "Copy Rendered" only applies to HTML output.
+function isPlainOutput(){return rearrangeMode && $('rearrangePlain').checked;}
+function syncRearrangeUi(){
+  $('copy').textContent=rearrangeMode?(isPlainOutput()?'Copy Text':'Copy Code'):'Copy HTML';
+  $('copyRendered').style.display=(rearrangeMode && !isPlainOutput())?'':'none';
+}
+try{
+  $('rearrangePlain').checked=localStorage.getItem('bloggerGen_rearrangePlain')==='1';
+  $('rearrangeBullets').checked=localStorage.getItem('bloggerGen_rearrangeBullets')==='1';
+}catch(e){}
+let rearrangeModePref=false;
+try{rearrangeModePref=localStorage.getItem('bloggerGen_rearrangeMode')==='1';}catch(e){}
+setRearrangeMode(rearrangeModePref);
+$('rearrangeMode').addEventListener('change',()=>{
+  const on=$('rearrangeMode').checked;
+  if(manuallyEdited && !confirm('Switching modes will replace your manual edits to the output. Continue?')){
+    $('rearrangeMode').checked=!on;
+    return;
+  }
+  manuallyEdited=false;
+  $('regenerate').style.display='none';
+  setRearrangeMode(on);
+  gen();
+  $('status').textContent=on?'Re-arranger mode: showing the interleaved lyrics only.':'Blogger template mode: showing the full post HTML.';
+});
+// Options (plain text / bullets) are remembered like the mode itself. Changing
+// one regenerates the output, so confirm first if that would drop manual edits.
+[['rearrangePlain','bloggerGen_rearrangePlain'],['rearrangeBullets','bloggerGen_rearrangeBullets']].forEach(([id,key])=>{
+  $(id).addEventListener('change',()=>{
+    const el=$(id);
+    if(manuallyEdited && !confirm('Changing this option will replace your manual edits to the output. Continue?')){
+      el.checked=!el.checked;
+      return;
+    }
+    manuallyEdited=false;
+    $('regenerate').style.display='none';
+    try{localStorage.setItem(key,el.checked?'1':'0')}catch(e){}
+    syncRearrangeUi();
+    gen();
+  });
+});
+// Interleaves Kanji -> Romaji -> Indonesian -> Singable, one row at a time.
+// Languages left empty are skipped. Spacing: with a single language there are
+// no gaps; with two or more, each line group (one line from every language) is
+// followed by a blank line. A blank row across every language marks a stanza
+// break and is collapsed into a single extra blank line.
+function rearrangedLyrics(){
+  const tracks=['kanji','romaji','translation','idns'].filter(id=>$(id).value.trim()!=='').map(lines);
+  if(!tracks.length)return '';
+  const max=Math.max(...tracks.map(t=>t.length));
+  const gapEvery=tracks.length===1?0:1;
+  const bullets=$('rearrangeBullets').checked;
+  // Build a list of output lines first ('' = blank line); the HTML or plain
+  // text rendering is applied at the very end.
+  const rows=[];
+  let rowsInStanza=0,pendingBreak=false;
+  for(let i=0;i<max;i++){
+    const vals=tracks.map(t=>t[i]).filter(v=>v!==undefined);
+    if(vals.length && vals.every(v=>v.trim()==='')){
+      pendingBreak=true;   // decided when the next real row arrives
+      rowsInStanza=0;
+      continue;
+    }
+    if(pendingBreak && rows.length){
+      if(bullets){
+        // blank line, bullet, blank line (same shape as the template's combined tab)
+        if(rows[rows.length-1]!=='')rows.push('');
+        rows.push('\u2022','');
+      }else rows.push('');
+    }
+    pendingBreak=false;    // trailing/leading stanza breaks are dropped
+    vals.forEach(v=>rows.push(v.trim()===''?'':v));
+    rowsInStanza++;
+    if(gapEvery && rowsInStanza%gapEvery===0)rows.push('');
+  }
+  while(rows.length && rows[rows.length-1]==='')rows.pop();
+  if($('rearrangePlain').checked)return rows.join('\n');
+  return rows.map(r=>(r===''?'':esc(r))+'<br />\n').join('');
+}
+// "Copy Rendered": copies the lyrics as formatted text (like the Re-Arranger's
+// Copy Output), so it can be pasted straight into Blogger's Compose view.
+$('copyRendered').addEventListener('click',async()=>{
+  const html=$('output').value;
+  if(!html.trim()){$('status').textContent='Nothing to copy yet.';return;}
+  const plain=new DOMParser().parseFromString(html.replace(/<br\s*\/?>\n?/gi,'\n'),'text/html').body.textContent;
+  try{
+    if(navigator.clipboard && window.ClipboardItem && window.isSecureContext){
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html':new Blob([html],{type:'text/html'}),
+        'text/plain':new Blob([plain],{type:'text/plain'})
+      })]);
+    }else{
+      const box=document.createElement('div');
+      box.innerHTML=html;
+      box.style.cssText='position:fixed;left:-9999px;top:0;';
+      document.body.appendChild(box);
+      const range=document.createRange();
+      range.selectNodeContents(box);
+      const sel=window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      const ok=document.execCommand('copy');
+      sel.removeAllRanges();
+      box.remove();
+      if(!ok)throw new Error('copy command was rejected');
+    }
+    $('status').textContent='Rendered lyrics copied to clipboard.';
+  }catch(e){
+    $('status').textContent='Copy failed: '+e.message+'. Use Copy Code instead.';
+  }
+});
+
 // Paste buttons for the Lyrics textareas: read the clipboard directly
 // instead of requiring the user to click in and select existing text.
 document.querySelectorAll('.paste-btn').forEach(btn=>{
@@ -469,6 +623,12 @@ function tabBody(tab,id){
   return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'">'+divLines(lines(id),tab)+'</div>';
 }
 function gen(){
+  if(rearrangeMode){
+    if(!manuallyEdited)$('output').value=rearrangedLyrics();
+    renderHighlight();
+    updatePreview();
+    return;
+  }
   const img=$('image').value.trim(), jp=$('titleJp').value, other=$('titleOther').value;
   const ih=Math.max(1,parseInt($('imgHeight').value,10)||320);
   const main=videoId($('youtube').value);
@@ -742,7 +902,8 @@ function updatePreview(){
   const frame=$('preview');
   if(!frame)return;
 
-  const html=$('output').value||'';
+  let html=$('output').value||'';
+  if(isPlainOutput())html='<div style="white-space:pre-wrap">'+esc(html)+'</div>';
   const parsed=extractBloggerCss($('previewCss')?.value||'');
   const themeVars=`<style>
     :root{
@@ -910,7 +1071,7 @@ $('copy').addEventListener('click',async()=>{
       document.execCommand('copy');
       $('output').setSelectionRange(0,0);
     }
-    $('status').textContent='HTML copied to clipboard.';
+    $('status').textContent=isPlainOutput()?'Text copied to clipboard.':'HTML copied to clipboard.';
   }catch(e){
     $('output').focus();
     $('output').select();
@@ -920,15 +1081,15 @@ $('copy').addEventListener('click',async()=>{
 $('download').addEventListener('click',()=>{
   try{
     if(!$('output').value)gen();
-    const blob=new Blob([$('output').value],{type:'text/html;charset=utf-8'});
+    const blob=new Blob([$('output').value],{type:isPlainOutput()?'text/plain;charset=utf-8':'text/html;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='blogger-post-template.html';
+    a.download=rearrangeMode?(isPlainOutput()?'rearranged-lyrics.txt':'rearranged-lyrics.html'):'blogger-post-template.html';
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    $('status').textContent='HTML file downloaded.';
+    $('status').textContent=isPlainOutput()?'Text file downloaded.':'HTML file downloaded.';
   }catch(e){
     console.error(e);
     $('status').textContent='Download failed: '+e.message;
