@@ -19,6 +19,9 @@
   --input-bg:#fff;
   --button-bg:#e8eaed;
   --button-text:#202124;
+  --info-ok:#1b7a3a;
+  --info-warn:#a85a00;
+  --info-bad:#c5221f;
 }
 html[data-ui-theme="dark"]{
   color-scheme:dark;
@@ -31,6 +34,9 @@ html[data-ui-theme="dark"]{
   --input-bg:#1b1e22;
   --button-bg:#343940;
   --button-text:#f0f1f3;
+  --info-ok:#6fdc8c;
+  --info-warn:#f2b84b;
+  --info-bad:#ff8f87;
 }
 *{box-sizing:border-box}body{margin:0;padding:24px;max-width:1500px;margin-inline:auto;background:var(--page-bg);color:var(--text)}
 h1{margin:0 0 6px}p.help{color:var(--muted);margin-top:0}
@@ -85,6 +91,7 @@ label{display:block;font-size:.88rem;font-weight:650;margin-bottom:5px}
 input,textarea,select{width:100%;font:inherit;padding:10px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--text)}
 textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-family:ui-monospace,monospace;font-size:.9rem}
 .full{grid-column:1/-1}.hint{font-size:.8rem;color:var(--muted);margin:5px 0 0}
+.hint .info-ok{color:var(--info-ok)}.hint .info-warn{color:var(--info-warn)}.hint .info-bad{color:var(--info-bad)}
 .field-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
 .field-label-row label{margin-bottom:0}
 .paste-btn,.mini-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
@@ -1074,16 +1081,26 @@ function extractFormHasData(){
 }
 function updateExtractInfo(){
   const raw=$('extractSource').value;
-  let msg='';
-  if(raw.trim()){
-    const r=extractFromHtml(raw);
-    if(!r)msg='This does not look like a post made by this generator (no data-gen markers and no recognisable structure).';
-    else{
-      msg='Found '+r.found.length+' section'+(r.found.length===1?'':'s')+': '+r.found.join(', ')+'.'+(r.guessed.length?' Read from the post structure (no markers), please check: '+r.guessed.join(', ')+'.':'')+(r.missing.length?' Not found: '+r.missing.join(', ')+'.':'');
-      if(r.version>GEN_FORMAT_VERSION)msg+=' This post uses a newer marker format than this page understands, so some data may be missed.';
-    }
+  const el=$('extractInfo');
+  el.textContent='';
+  if(!raw.trim())return;
+  // Append a piece of text, optionally coloured (ok = green, warn = amber, bad = red).
+  const add=(text,cls)=>{
+    if(!cls){el.appendChild(document.createTextNode(text));return;}
+    const sp=document.createElement('span');
+    sp.className='info-'+cls;
+    sp.textContent=text;
+    el.appendChild(sp);
+  };
+  const r=extractFromHtml(raw);
+  if(!r){
+    add('This does not look like a post made by this generator (no data-gen markers and no recognisable structure).','bad');
+    return;
   }
-  $('extractInfo').textContent=msg;
+  add('Found '+r.found.length+' section'+(r.found.length===1?'':'s')+': '+r.found.join(', ')+'.','ok');
+  if(r.guessed.length)add(' Read from the post structure (no markers), please check: '+r.guessed.join(', ')+'.','warn');
+  if(r.missing.length)add(' Not found: '+r.missing.join(', ')+'.','bad');
+  if(r.version>GEN_FORMAT_VERSION)add(' This post uses a newer marker format than this page understands, so some data may be missed.','warn');
 }
 $('extractSource').addEventListener('input',updateExtractInfo);
 $('extractPaste').addEventListener('click',async()=>{
