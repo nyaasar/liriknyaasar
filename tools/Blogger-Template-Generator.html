@@ -151,7 +151,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <header class="app-header">
   <div>
     <h1>LirikNyaasar Template Generator</h1>
-    <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Post-Template-Generator.html">your browser.</a></p>
+    <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Template-Generator.html">your browser.</a></p>
   </div>
   <div class="header-controls">
     <label class="mode-switch" for="rearrangeMode" title="Output only the interleaved lyrics (Kanji, Romaji, Indonesian) instead of the full Blogger post">
@@ -167,6 +167,15 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </header>
 <div class="layout">
 <section class="panel">
+<details class="post-only split-panel" id="extractPanel">
+<summary>Load an existing post back into the form (Extract)</summary>
+<p class="hint">Paste the post's HTML source (from Blogger's HTML view). The generator reads only the parts it marked with <code>data-gen</code> attributes, so manual edits elsewhere don't matter as long as those attributes are left alone. Older posts without markers are read from their structure instead, and those sections are listed so you can double-check them.</p>
+<div class="field-label-row"><label for="extractSource">Post HTML</label><span class="split-actions"><button type="button" class="mini-btn" id="extractPaste">&#128203; Paste</button><button type="button" class="mini-btn" id="extractUseOutput">Use current output</button></span></div>
+<textarea id="extractSource" class="lyrics" placeholder="Paste the post HTML here ..."></textarea>
+<label class="wrap-toggle" for="extractReset"><input type="checkbox" id="extractReset" checked>Clear the form first (so nothing from the previous post is left over)</label>
+<p class="hint" id="extractInfo"></p>
+<div class="split-buttons"><button type="button" class="primary" id="extractRun">Extract into form</button><button type="button" id="extractClear">Clear</button></div>
+</details>
 <h2 class="post-only">Post Details:</h2>
 <h2 class="rearr-only">Lyrics Re-arranger:</h2>
 <div class="fields post-only">
@@ -714,6 +723,395 @@ $('splitRun').addEventListener('click',()=>{
   $('status').textContent='Split into '+names.join(', ')+' ('+r.rows+' line'+(r.rows===1?'':'s')+(r.bad?', '+r.bad+' misaligned':'')+').'+(manuallyEdited?' The output has manual edits, so click Regenerate to refresh it.':'');
 });
 
+// --- Extract form data back out of a generated post -------------------------
+// Every data-bearing element in the generated post carries a data-gen attribute.
+// Reading a post back looks only at those marked elements, so manual edits to
+// anything else don't matter (as long as the attributes themselves are kept).
+// Indonesian date inside an update notice, e.g. "Kamis, 21 Maret 2024".
+const ID_DATE_RE=new RegExp('('+ID_DAYS.join('|')+'), (\\d{1,2}) ('+ID_MONTHS.join('|')+') (\\d{4})');
+// Older posts have no data-gen markers. For any section whose marker is missing
+// the post's fixed structure (tabs, table cells, iframes, ...) is read instead.
+// Sections read that way are reported as "guessed" so they can be double-checked.
+function parseLegacyRelations(doc){
+  const cell=doc.querySelector('td.termasuk_dalam');
+  if(!cell)return [];
+  const holder=cell.querySelector('.mdlktgri2')||cell;
+  const html=holder.innerHTML.trim();
+  if(!html||html==='-')return [];
+  const headings={};
+  Object.keys(REL_TYPES).forEach(k=>{if(REL_TYPES[k].heading)headings[REL_TYPES[k].heading.toLowerCase()]=k;});
+  const rels=[];
+  let others=null;
+  // Groups are joined by <br><br>, lines inside a group by a single <br>.
+  html.split(/(?:<br\s*\/?>\s*){2}/i).forEach(groupHtml=>{
+    let lines=groupHtml.split(/<br\s*\/?>/i).map(l=>l.trim()).filter(Boolean);
+    if(!lines.length)return;
+    let type='other';
+    const hm=/^([^:<>]+):$/.exec(lines[0]);
+    if(hm&&headings[hm[1].trim().toLowerCase()]){type=headings[hm[1].trim().toLowerCase()];lines=lines.slice(1);}
+    lines.forEach(l=>{
+      const d=doc.createElement('div');
+      d.innerHTML=l;
+      const text=d.textContent.trim();
+      if(type==='other'||!text){
+        if(!text)return;
+        if(!others){others={type:'other',values:[]};rels.push(others);}
+        others.values.push(text);
+        return;
+      }
+      const a=(d.firstChild&&d.firstChild.nodeType===1&&d.firstChild.tagName==='A')?d.firstChild:null;
+      const item={type,name:'',url:'',theme:'',year:'',track:''};
+      if(REL_TYPES[type].kind==='album'){
+        let rest;
+        if(a){item.name=a.textContent;item.url=a.getAttribute('href')||'';rest=d.textContent.slice(item.name.length);}
+        else rest=null;
+        if(a){
+          const m=/^\s*(?:\(([^()]*)\))?\s*(?:-\s*(.*))?$/.exec(rest);
+          if(m){item.year=(m[1]||'').trim();item.track=(m[2]||'').trim();}
+        }else{
+          const m=/^(.*?)\s\(([^()]*)\)(?:\s-\s(.*))?$/.exec(text);
+          if(m){item.name=m[1].trim();item.year=m[2].trim();item.track=(m[3]||'').trim();}
+          else{
+            const i=text.lastIndexOf(' - ');
+            if(i>=0){item.name=text.slice(0,i).trim();item.track=text.slice(i+3).trim();}
+            else item.name=text;
+          }
+        }
+      }else if(a){
+        item.name=a.textContent;
+        item.url=a.getAttribute('href')||'';
+        item.theme=d.textContent.slice(item.name.length).replace(/^\s*-\s*/,'').trim();
+      }else{
+        const i=text.lastIndexOf(' - ');
+        if(i>=0){item.name=text.slice(0,i).trim();item.theme=text.slice(i+3).trim();}
+        else item.name=text;
+      }
+      rels.push(item);
+    });
+  });
+  return rels;
+}
+// The notice sits as loose text just before the tab block, between <br>s.
+function legacyUpdateHolder(doc,tabOuter){
+  if(!tabOuter)return null;
+  let n=tabOuter.previousSibling;
+  while(n&&((n.nodeType===3&&!n.nodeValue.trim())||(n.nodeType===1&&n.tagName==='BR')))n=n.previousSibling;
+  const parts=[];
+  while(n&&!(n.nodeType===1&&n.tagName==='BR')){
+    if(n.nodeType===1&&!/^(B|I|U|EM|STRONG|A|SPAN|SPAN2|SMALL|FONT)$/.test(n.tagName))return null;
+    if(n.nodeType!==8)parts.unshift(n);
+    n=n.previousSibling;
+  }
+  if(!parts.length)return null;
+  const holder=doc.createElement('div');
+  parts.forEach(x=>holder.appendChild(x.cloneNode(true)));
+  return holder.textContent.trim()?holder:null;
+}
+function extractFromHtml(raw){
+  const doc=new DOMParser().parseFromString(String(raw||''),'text/html');
+  const tabOuter=doc.querySelector('#tab-outer');
+  if(!doc.querySelector('[data-gen],table.tabelkategori,#tab-outer,#tab-body,span2'))return null;
+  const q=name=>doc.querySelector('[data-gen="'+name+'"]');
+  const data={},found=[],missing=[],guessed=[];
+  const track=(label,ok,guess)=>{(ok?found:missing).push(label);if(ok&&guess)guessed.push(label);};
+  const isBefore=(node,ref)=>!!(ref.compareDocumentPosition(node)&Node.DOCUMENT_POSITION_PRECEDING);
+
+  // Image and how it is linked
+  let img=q('image'),imgGuess=false;
+  if(!img){
+    img=Array.from(doc.querySelectorAll('img')).find(i=>!i.closest('.catatan-lirik,#tab-outer'))||null;
+    imgGuess=!!img;
+  }
+  if(img){
+    data.image=img.getAttribute('src')||'';
+    const mh=/max-height\s*:\s*(\d+)/i.exec(img.getAttribute('style')||'');
+    if(mh)data.imgHeight=mh[1];
+    const link=q('image-link')||img.closest('a');
+    if(link&&link.tagName==='A'){
+      const href=link.getAttribute('href')||'';
+      data.imgHref=(!href||href===data.image)?'same':'custom';
+      if(data.imgHref==='custom')data.imgHrefCustom=href;
+      data.imgTarget=link.getAttribute('target')==='_blank';
+    }else data.imgHref='none';
+  }
+  track('Image',!!img,imgGuess);
+
+  // Titles (with their tooltips) and artist
+  const spans=Array.from(doc.querySelectorAll('span2'));
+  let tj=q('title-jp'),to=q('title-other'),tjG=false,toG=false;
+  if(!tj){tj=spans.find(x=>x!==to)||null;tjG=!!tj;}
+  if(!to){to=spans.find(x=>x!==tj)||null;toG=!!to;}
+  if(tj){data.titleJp=tj.textContent;data.titleTooltip=tj.getAttribute('title')||'';}
+  else{
+    const c=doc.querySelector('td.judul_lagu');
+    const t1=c&&c.querySelector('.mdlktgri1'),t2=c&&c.querySelector('.mdlktgri2');
+    if(t1&&t1.textContent){data.titleJp=t1.textContent;data.titleTooltip=t2?t2.textContent:'';tjG=true;}
+  }
+  if(to){data.titleOther=to.textContent;data.titleOtherTooltip=to.getAttribute('title')||'';}
+  track('Main title',data.titleJp!==undefined,tjG);
+  track('Second title',!!to,toG);
+  let aj=q('artist-jp'),ar=q('artist'),aG=false;
+  if(aj)data.artistJp=aj.textContent;
+  if(ar)data.artist=ar.textContent;
+  if(!aj&&!ar){
+    const cell=doc.querySelector('td.nama_artis');
+    if(cell){
+      const sp=cell.querySelectorAll('.mdlktgri1,.mdlktgri2');
+      if(sp.length>=2){data.artistJp=sp[0].textContent;data.artist=sp[1].textContent;aG=true;}
+      else if(sp.length===1){data.artist=sp[0].textContent;aG=true;}
+      else if(cell.textContent.trim()){data.artist=cell.textContent.trim();aG=true;}
+    }
+  }
+  track('Artist',data.artist!==undefined||data.artistJp!==undefined,aG);
+
+  // "Termasuk dalam" relations. All "Others" lines go back into one item.
+  let rels=[],relGuess=false;
+  let others=null;
+  doc.querySelectorAll('[data-gen="rel"]').forEach(el=>{
+    let type=el.getAttribute('data-type')||'other';
+    if(!REL_TYPES[type])type='other';
+    if(type==='other'){
+      if(!others){others={type:'other',values:[]};rels.push(others);}
+      others.values.push(el.textContent.trim());
+      return;
+    }
+    const pick=k=>{const n=el.querySelector('[data-gen="rel-'+k+'"]');return n?n.textContent.trim():'';};
+    const nameEl=el.querySelector('[data-gen="rel-name"]');
+    rels.push({type,name:pick('name'),url:(nameEl&&nameEl.tagName==='A')?(nameEl.getAttribute('href')||''):'',theme:pick('theme'),year:pick('year'),track:pick('track')});
+  });
+  if(!rels.length){rels=parseLegacyRelations(doc);relGuess=rels.length>0;}
+  if(rels.length)data.relations=rels;
+  track('Relations',rels.length>0,relGuess);
+
+  // Videos: the main one, then extras (each with an optional heading). Without
+  // markers, the main video is the iframe before the tab block and extras follow it.
+  const allFrames=Array.from(doc.querySelectorAll('iframe'));
+  let vm=q('video-main'),vmG=false;
+  if(!vm){
+    vm=allFrames.find(f=>f.getAttribute('data-gen')!=='video-extra'&&(tabOuter?isBefore(f,tabOuter):/Stream YouTube/i.test(f.parentNode.textContent)))||null;
+    vmG=!!vm;
+  }
+  if(vm)data.youtube=videoId(vm.getAttribute('src')||'');
+  track('Main video',!!vm,vmG);
+  let extras=[],exG=false;
+  let pendingTitle='';
+  doc.querySelectorAll('[data-gen="video-extra-title"],[data-gen="video-extra"]').forEach(el=>{
+    if(el.getAttribute('data-gen')==='video-extra-title'){pendingTitle=el.textContent.trim();return;}
+    extras.push({title:pendingTitle,id:videoId(el.getAttribute('src')||'')});
+    pendingTitle='';
+  });
+  if(!extras.length&&tabOuter){
+    allFrames.filter(f=>f!==vm&&!isBefore(f,tabOuter)&&!tabOuter.contains(f)).forEach(f=>{
+      const pv=f.previousElementSibling;
+      const isTitle=pv&&pv.tagName==='SPAN'&&pv.querySelector('b')&&/font-size\s*:\s*large/i.test(pv.getAttribute('style')||'');
+      extras.push({title:isTitle?pv.textContent.trim():'',id:videoId(f.getAttribute('src')||'')});
+    });
+    exG=extras.length>0;
+  }
+  if(extras.length)data.extraVideos=extras;
+  track('Extra videos',extras.length>0,exG);
+
+  // Update notice: the raw date lives in data-date. If the visible sentence is
+  // exactly the default one it is "default"; otherwise it comes back as a custom
+  // sentence, with the formatted date turned back into {date} where it appears.
+  const readUpdate=(holder,dateAttr,parseDate)=>{
+    let date=dateAttr||'';
+    const text=holder.textContent.trim();
+    if(!date&&parseDate){
+      const m=ID_DATE_RE.exec(text);
+      if(m)date=m[4]+'-'+String(ID_MONTHS.indexOf(m[3])+1).padStart(2,'0')+'-'+String(+m[2]).padStart(2,'0');
+    }
+    const dtxt=idDate(date);
+    const def=dtxt?'Terjemahan dimutakhirkan pada '+dtxt+'.':'';
+    let custom='';
+    if(!(def&&text===def)){
+      custom=holder.innerHTML.trim();
+      if(dtxt)custom=custom.split(dtxt).join('{date}');
+    }
+    return {date,custom};
+  };
+  const up=q('update');
+  let updGuess=false;
+  if(up)data.update=readUpdate(up,up.getAttribute('data-date')||'',false);
+  else{
+    const holder=legacyUpdateHolder(doc,tabOuter);
+    if(holder){data.update=readUpdate(holder,'',true);updGuess=true;}
+  }
+  track('Update notice',!!data.update,updGuess);
+
+  // Notes (raw HTML lines; <br /> lines were the blank ones). Without markers the
+  // notes are everything in the notes box before the first extra video's <br />s.
+  const toNotes=html=>html.replace(/\r/g,'').split('\n').map(l=>l.trim()).map(l=>/^<br\s*\/?>$/i.test(l)?'':l).join('\n');
+  const nt=q('notes-text');
+  let notesGuess=false;
+  if(nt)data.notes=toNotes(nt.innerHTML);
+  else{
+    const cont=q('notes')||doc.querySelector('.catatan-lirik');
+    if(cont){
+      let boundary=null;
+      const fi=cont.querySelector('iframe');
+      if(fi){
+        let n=fi;
+        const pv=fi.previousElementSibling;
+        if(pv&&pv.tagName==='SPAN'&&pv.querySelector('b')&&/font-size\s*:\s*large/i.test(pv.getAttribute('style')||''))n=pv;
+        let p=n.previousSibling,brs=0;
+        while(p&&brs<3){
+          if(p.nodeType===3&&!p.nodeValue.trim()){p=p.previousSibling;continue;}
+          if(p.nodeType===1&&p.tagName==='BR'){n=p;brs++;p=p.previousSibling;continue;}
+          break;
+        }
+        boundary=n;
+      }
+      const r=doc.createRange();
+      r.setStart(cont,0);
+      if(boundary)r.setEndBefore(boundary);else r.setEnd(cont,cont.childNodes.length);
+      const tmp=doc.createElement('div');
+      tmp.appendChild(r.cloneContents());
+      const html=tmp.innerHTML.trim();
+      if(html){data.notes=toNotes(html);notesGuess=true;}
+    }
+  }
+  track('Notes',data.notes!==undefined,notesGuess);
+
+  // Lyrics: each tab's line <div>s, blank lines being the <br /> ones
+  [['kanji','lyrics-kanji','Kanji lyrics','.likanji,#tab2'],['romaji','lyrics-romaji','Romaji lyrics','#tab3'],['translation','lyrics-translation','Indonesian lyrics','#tab4'],['idns','lyrics-singable','Singable lyrics','#tab5']].forEach(([id,m,label,sel])=>{
+    let el=q(m),g=false;
+    if(!el){el=doc.querySelector(sel);g=!!el;}
+    if(el)data[id]=Array.from(el.children).map(c=>c.textContent.trim()===''?'':c.textContent).join('\n');
+    track(label,!!el,g);
+  });
+
+  // Read-more position: where the <!--more--> comment sits relative to the table
+  const table=doc.querySelector('table.tabelkategori');
+  let moreNode=null;
+  const tw=doc.createTreeWalker(doc,NodeFilter.SHOW_COMMENT);
+  while(tw.nextNode()){if(tw.currentNode.nodeValue.trim()==='more'){moreNode=tw.currentNode;break;}}
+  if(moreNode&&table)data.moreBreak=(table.compareDocumentPosition(moreNode)&Node.DOCUMENT_POSITION_PRECEDING)?'before':'after';
+  track('Read-more position',!!data.moreBreak);
+
+  const root=q('post');
+  return {data,found,missing,guessed,version:root?(parseInt(root.getAttribute('data-gen-v'),10)||1):0};
+}
+function resetPostForm(){
+  ids.forEach(id=>{
+    $(id).value='';
+    try{localStorage.removeItem('bloggerGen_'+id)}catch(e){}
+  });
+  $('imgHeight').value=320;
+  $('relationList').innerHTML='';
+  $('extraVideos').innerHTML='';
+  setNotesEnabled(false);
+  setUpdateEnabled(false);
+  setUpdateCustomEnabled(false);
+  refreshUpdateHint();
+}
+function putField(id,val){
+  const el=$(id);
+  el.value=val;
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function applyExtracted(data,reset){
+  if(reset)resetPostForm();
+  ['image','imgHeight','imgHrefCustom','titleJp','titleTooltip','titleOther','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns'].forEach(id=>{
+    if(data[id]!==undefined)putField(id,data[id]);
+  });
+  if(data.imgHref!==undefined){
+    $('imgHref').value=data.imgHref;
+    $('imgHref').dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  if(data.imgTarget!==undefined){
+    $('imgTarget').checked=data.imgTarget;
+    $('imgTarget').dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  if(data.moreBreak){
+    $('moreBreak').value=data.moreBreak;
+    $('moreBreak').dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  if(data.update){
+    setUpdateEnabled(true);
+    if(data.update.date)putField('updateDate',data.update.date);
+    if(data.update.custom){setUpdateCustomEnabled(true);putField('updateCustom',data.update.custom);}
+    else setUpdateCustomEnabled(false);
+    refreshUpdateHint();
+  }
+  if(data.notes!==undefined){
+    setNotesEnabled(true);
+    putField('notes',data.notes);
+  }
+  if(data.relations){
+    $('relationList').innerHTML='';
+    data.relations.forEach(r=>{
+      const wrap=addRelationItem(r.type);
+      if(r.type==='other'){
+        const first=wrap.querySelector('.rel-other-input');
+        r.values.forEach((v,i)=>{
+          if(i===0&&first)first.value=v;else addOtherInput(wrap,v);
+        });
+      }else{
+        wrap.querySelector('.rel-name').value=r.name;
+        wrap.querySelector('.rel-url').value=r.url;
+        wrap.querySelector('.rel-theme').value=r.theme;
+        wrap.querySelector('.rel-year').value=r.year;
+        wrap.querySelector('.rel-track').value=r.track;
+      }
+    });
+  }
+  if(data.extraVideos){
+    $('extraVideos').innerHTML='';
+    data.extraVideos.forEach(v=>addVideoItem(v.title,v.id));
+  }
+  // The output is rebuilt from the form, so manual edits to it are replaced.
+  manuallyEdited=false;
+  $('regenerate').style.display='none';
+  gen();
+}
+function extractFormHasData(){
+  return ids.some(id=>id!=='imgHeight'&&$(id).value.trim()!=='')||$('relationList').children.length>0||$('extraVideos').children.length>0;
+}
+function updateExtractInfo(){
+  const raw=$('extractSource').value;
+  let msg='';
+  if(raw.trim()){
+    const r=extractFromHtml(raw);
+    if(!r)msg='This does not look like a post made by this generator (no data-gen markers and no recognisable structure).';
+    else{
+      msg='Found '+r.found.length+' section'+(r.found.length===1?'':'s')+': '+r.found.join(', ')+'.'+(r.guessed.length?' Read from the post structure (no markers), please check: '+r.guessed.join(', ')+'.':'')+(r.missing.length?' Not found: '+r.missing.join(', ')+'.':'');
+      if(r.version>GEN_FORMAT_VERSION)msg+=' This post uses a newer marker format than this page understands, so some data may be missed.';
+    }
+  }
+  $('extractInfo').textContent=msg;
+}
+$('extractSource').addEventListener('input',updateExtractInfo);
+$('extractPaste').addEventListener('click',async()=>{
+  try{
+    $('extractSource').value=await navigator.clipboard.readText();
+    updateExtractInfo();
+    $('status').textContent='Pasted into the extract box. Click Extract into form to load it.';
+  }catch(e){
+    $('status').textContent='Could not read clipboard. Click the extract box and press Ctrl+V instead.';
+  }
+});
+$('extractUseOutput').addEventListener('click',()=>{
+  if(!$('output').value.trim()){$('status').textContent='The output is empty.';return;}
+  $('extractSource').value=$('output').value;
+  updateExtractInfo();
+  $('status').textContent='Loaded the current output into the extract box.';
+});
+$('extractClear').addEventListener('click',()=>{
+  $('extractSource').value='';
+  updateExtractInfo();
+});
+$('extractRun').addEventListener('click',()=>{
+  const raw=$('extractSource').value;
+  if(!raw.trim()){$('status').textContent='Nothing to extract. Paste the post HTML into the extract box first.';return;}
+  const r=extractFromHtml(raw);
+  if(!r){updateExtractInfo();$('status').textContent='That HTML does not look like a post made by this generator.';return;}
+  const reset=$('extractReset').checked;
+  if((extractFormHasData()||manuallyEdited)&&!confirm((reset?'This will replace everything currently in the form':'This will overwrite the matching fields in the form')+' with the data from the pasted post, and regenerate the output (manual edits to the current output are not kept). Continue?'))return;
+  applyExtracted(r.data,reset);
+  $('status').textContent='Extracted '+r.found.length+' section'+(r.found.length===1?'':'s')+' into the form'+(r.guessed.length?' ('+r.guessed.length+' read without markers, please check them)':'')+(r.missing.length?' (not found: '+r.missing.join(', ')+')':'')+'.';
+});
+
 // Copy buttons for the Lyrics textareas.
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   const original=btn.textContent;
@@ -771,6 +1169,8 @@ function lines(id){return $(id).value.replace(/\r/g,'').split('\n');}
 // CSS class put on every singable lyric line (in the combined tab and the
 // singable tab) so it can be styled in the Blogger template, e.g. .lisingable{...}
 const SINGABLE_CLASS='lisingable';
+// Version of the data-gen marker format written into generated posts.
+const GEN_FORMAT_VERSION=1;
 function divLines(text,tab,cls=''){
   const c=cls?' class="'+cls+'"':'';
   return text.map(line=>line.trim()===''?'<div id="'+tab+'"><br /></div>':'<div'+c+' id="'+tab+'">'+esc(line)+'</div>').join('');
@@ -802,7 +1202,7 @@ function combined(){
   return out;
 }
 function tabBody(tab,id){
-  return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'">'+divLines(lines(id),tab)+'</div>';
+  return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'" data-gen="lyrics-'+id+'">'+divLines(lines(id),tab)+'</div>';
 }
 function gen(){
   if(rearrangeMode){
@@ -816,37 +1216,39 @@ function gen(){
   const main=videoId($('youtube').value);
   const extras=[...document.querySelectorAll('.extra-video-item')].map(row=>({title:row.querySelector('.extra-video-title').value.trim(),id:videoId(row.querySelector('.extra-video-url').value)})).filter(v=>v.id);
   const moreBefore=$('moreBreak').value!=='after';
-  let h='<div class="separator" style="clear: both; text-align: center;">\n';
+  let h='<div class="separator" style="clear: both; text-align: center;" data-gen="post" data-gen-v="'+GEN_FORMAT_VERSION+'">\n';
   if(img){
     const hrefMode=$('imgHref').value;
     const hrefCustom=$('imgHrefCustom').value.trim();
     const hrefUrl=hrefMode==='custom'?(hrefCustom||img):img;
-    const imgTag='<img alt="" border="0" style="max-height:'+ih+'px; width:auto; height:auto;" src="'+attr(img)+'"/>';
+    const imgTag='<img alt="" border="0" style="max-height:'+ih+'px; width:auto; height:auto;" src="'+attr(img)+'" data-gen="image"/>';
     const boxStyle='display: block; padding: 1em 0; text-align: center;';
     if(hrefMode==='none'){
-      h+='  <div class="separator" style="clear: both;"><div style="'+boxStyle+'">'+imgTag+'</div></div>\n';
+      h+='  <div class="separator" style="clear: both;"><div data-gen="image-link" style="'+boxStyle+'">'+imgTag+'</div></div>\n';
     }else{
       const targetAttr=$('imgTarget').checked?' target="_blank" rel="noopener"':'';
-      h+='  <div class="separator" style="clear: both;"><a href="'+attr(hrefUrl)+'"'+targetAttr+' style="'+boxStyle+'">'+imgTag+'</a></div>\n';
+      h+='  <div class="separator" style="clear: both;"><a data-gen="image-link" href="'+attr(hrefUrl)+'"'+targetAttr+' style="'+boxStyle+'">'+imgTag+'</a></div>\n';
     }
   }else h+='  <!-- Add your image URL in the generator to include the post image. -->\n';
   h+='  <div style="text-align: center;">\n';
-  if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'"><b>'+esc(jp)+'</b></span2><br />\n';
-  if(other)h+='    <span2 style="font-size: large;" title="'+attr($('titleOtherTooltip').value)+'"><b>'+esc(other)+'</b></span2><br />\n';
+  if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'" data-gen="title-jp"><b>'+esc(jp)+'</b></span2><br />\n';
+  if(other)h+='    <span2 style="font-size: large;" title="'+attr($('titleOtherTooltip').value)+'" data-gen="title-other"><b>'+esc(other)+'</b></span2><br />\n';
   h+='  </div>\n  <br />\n  <br />\n'+(moreBefore?'  <!--more-->\n':'')+'  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+esc(jp)+'</span><span class="mdlktgri2">'+esc($('titleTooltip').value)+'</span></td>\n';
-  h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1">'+esc($('artistJp').value)+'</span><span class="mdlktgri2">'+esc($('artist').value)+'</span>'):('<span class="mdlktgri1">'+esc($('artist').value)+'</span>'))+'</td>\n';
+  h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1" data-gen="artist-jp">'+esc($('artistJp').value)+'</span><span class="mdlktgri2" data-gen="artist">'+esc($('artist').value)+'</span>'):('<span class="mdlktgri1" data-gen="artist">'+esc($('artist').value)+'</span>'))+'</td>\n';
   const relation=relationHtml();
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
-  if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
+  if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe data-gen="video-main" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
   const updText=buildUpdateNotice();
-  h+=(updText?'  <br />\n  '+updText+'<br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  const updDate=$('updateDate').value;
+  const updAttr=idDate(updDate)?' data-date="'+attr(updDate)+'"':'';
+  h+=(updText?'  <br />\n  <span data-gen="update"'+updAttr+'>'+updText+'</span><br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3" data-gen="lyrics-romaji">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4" data-gen="lyrics-translation">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5" data-gen="lyrics-singable">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
   if(notesOn || extras.length){
-    if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;">\n    '+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'\n';
+    if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;" data-gen="notes">\n    <span data-gen="notes-text">'+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'</span>\n';
     extras.forEach(v=>{
       h+='    <br /><br /><br />\n';
-      if(v.title)h+='    <span style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
-      h+='    <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
+      if(v.title)h+='    <span data-gen="video-extra-title" style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
+      h+='    <iframe data-gen="video-extra" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
     });
     if(notesOn)h+='  </div>\n';
     h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
@@ -1004,25 +1406,27 @@ function relationHtml(){
     const type=row.querySelector('.rel-type').value;
     const t=REL_TYPES[type]||REL_TYPES.anime;
     const lines=[];
+    const relOpen='<span data-gen="rel" data-type="'+type+'">';
     if(t.kind==='other'){
       row.querySelectorAll('.rel-other-input').forEach(i=>{
         const v=i.value.trim();
-        if(v)lines.push(esc(v));
+        if(v)lines.push(relOpen+esc(v)+'</span>');
       });
     }else{
       const name=row.querySelector('.rel-name').value.trim();
       const url=row.querySelector('.rel-url').value.trim();
-      const linked=name?(url?'<a href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name)):'';
+      const linked=name?(url?'<a data-gen="rel-name" href="'+attr(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':'<span data-gen="rel-name">'+esc(name)+'</span>'):'';
+      const part=(k,v)=>v?'<span data-gen="rel-'+k+'">'+esc(v)+'</span>':'';
       let line;
       if(t.kind==='album'){
         const year=row.querySelector('.rel-year').value.trim();
         const track=row.querySelector('.rel-track').value.trim();
-        const titleYear=linked+(year?(linked?' ':'')+'('+esc(year)+')':'');
-        line=[titleYear,esc(track)].filter(Boolean).join(' - ');
+        const titleYear=linked+(year?(linked?' ':'')+'('+part('year',year)+')':'');
+        line=[titleYear,part('track',track)].filter(Boolean).join(' - ');
       }else{
-        line=[linked,esc(row.querySelector('.rel-theme').value.trim())].filter(Boolean).join(' - ');
+        line=[linked,part('theme',row.querySelector('.rel-theme').value.trim())].filter(Boolean).join(' - ');
       }
-      if(line)lines.push(line);
+      if(line)lines.push(relOpen+line+'</span>');
     }
     if(!lines.length)return;
     if(!byType[type]){byType[type]={heading:t.heading,lines:[]};groups.push(byType[type]);}
