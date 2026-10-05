@@ -967,7 +967,9 @@ function extractFromHtml(raw){
       if(boundary)r.setEndBefore(boundary);else r.setEnd(cont,cont.childNodes.length);
       const tmp=doc.createElement('div');
       tmp.appendChild(r.cloneContents());
-      const html=tmp.innerHTML.trim();
+      // A bare <span> wrapper left over from a deleted notes-text marker is unwrapped.
+      const kids=Array.from(tmp.childNodes).filter(n=>!(n.nodeType===3&&!n.nodeValue.trim()));
+      const html=(kids.length===1&&kids[0].nodeType===1&&kids[0].tagName==='SPAN'&&!kids[0].attributes.length?kids[0].innerHTML:tmp.innerHTML).trim();
       if(html){data.notes=toNotes(html);notesGuess=true;}
     }
   }
@@ -1000,6 +1002,7 @@ function resetPostForm(){
   $('imgHeight').value=320;
   $('relationList').innerHTML='';
   $('extraVideos').innerHTML='';
+  try{localStorage.removeItem('bloggerGen_relations');localStorage.removeItem('bloggerGen_extraVideos')}catch(e){}
   setNotesEnabled(false);
   setUpdateEnabled(false);
   setUpdateCustomEnabled(false);
@@ -1060,6 +1063,7 @@ function applyExtracted(data,reset){
     $('extraVideos').innerHTML='';
     data.extraVideos.forEach(v=>addVideoItem(v.title,v.id));
   }
+  persistLists();
   // The output is rebuilt from the form, so manual edits to it are replaced.
   manuallyEdited=false;
   $('regenerate').style.display='none';
@@ -1244,13 +1248,16 @@ function gen(){
   h+=(updText?'  <br />\n  <span data-gen="update"'+updAttr+'>'+updText+'</span><br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3" data-gen="lyrics-romaji">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4" data-gen="lyrics-translation">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5" data-gen="lyrics-singable">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
   if(notesOn || extras.length){
-    if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;" data-gen="notes">\n    <span data-gen="notes-text">'+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'</span>\n';
+    if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;" data-gen="notes">\n    <span data-gen="notes-text">'+$('notes').value.replace(/\r/g,'').split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'</span>\n  </div>\n';
+    // Additional videos get their own DIV (not nested in the notes DIV), so styling
+    // one never affects the other.
+    if(extras.length)h+='  <div class="video-tambahan" data-gen="extras">\n';
     extras.forEach(v=>{
       h+='    <br /><br /><br />\n';
       if(v.title)h+='    <span data-gen="video-extra-title" style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
       h+='    <iframe data-gen="video-extra" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
     });
-    if(notesOn)h+='  </div>\n';
+    if(extras.length)h+='  </div>\n';
     h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   }
   h+='</div>';
@@ -1334,6 +1341,7 @@ function addOtherInput(wrap,value=''){
   row.querySelector('input').value=value;
   row.querySelector('.remove-other').addEventListener('click',()=>{
     row.remove();
+    persistLists();
     scheduleLiveGenerate();
   });
   wrap.querySelector('.rel-other-list').appendChild(row);
@@ -1385,14 +1393,17 @@ function addRelationItem(type='anime'){
   setRelItemType(wrap,type);
   sel.addEventListener('change',()=>{
     setRelItemType(wrap,sel.value);
+    persistLists();
     scheduleLiveGenerate();
   });
   wrap.querySelector('.add-other-input').addEventListener('click',()=>{
     addOtherInput(wrap).querySelector('input').focus();
+    persistLists();
     scheduleLiveGenerate();
   });
   wrap.querySelector('.remove-rel').addEventListener('click',()=>{
     wrap.remove();
+    persistLists();
     scheduleLiveGenerate();
   });
   $('relationList').appendChild(wrap);
@@ -1445,6 +1456,7 @@ function addVideoItem(title='',url=''){
   wrap.querySelector('.extra-video-url').value=url;
   wrap.querySelector('.remove-video').addEventListener('click',()=>{
   wrap.remove();
+  persistLists();
   scheduleLiveGenerate();
 });
   $('extraVideos').appendChild(wrap);
@@ -1584,18 +1596,76 @@ function scheduleLiveGenerate(){
   window.__liveGenerateTimer=setTimeout(gen,120);
 }
 
+// --- Persist the Relation Section and Additional Videos lists -------------
+// These are dynamically-built rows, so (unlike the plain `ids` fields) they
+// need their own serialize/restore step to survive a page refresh.
+function collectRelations(){
+  return [...document.querySelectorAll('#relationList .rel-item')].map(row=>{
+    const type=row.querySelector('.rel-type').value;
+    if(type==='other'){
+      return {type,values:[...row.querySelectorAll('.rel-other-input')].map(i=>i.value)};
+    }
+    return {
+      type,
+      name:row.querySelector('.rel-name').value,
+      url:row.querySelector('.rel-url').value,
+      theme:row.querySelector('.rel-theme').value,
+      year:row.querySelector('.rel-year').value,
+      track:row.querySelector('.rel-track').value
+    };
+  });
+}
+function collectExtraVideos(){
+  return [...document.querySelectorAll('.extra-video-item')].map(row=>({
+    title:row.querySelector('.extra-video-title').value,
+    url:row.querySelector('.extra-video-url').value
+  }));
+}
+function persistLists(){
+  try{localStorage.setItem('bloggerGen_relations',JSON.stringify(collectRelations()))}catch(e){}
+  try{localStorage.setItem('bloggerGen_extraVideos',JSON.stringify(collectExtraVideos()))}catch(e){}
+}
+function loadPersistedRelations(){
+  let saved=[];
+  try{saved=JSON.parse(localStorage.getItem('bloggerGen_relations')||'[]')}catch(e){saved=[]}
+  saved.forEach(r=>{
+    const wrap=addRelationItem(r.type||'anime');
+    if(r.type==='other'){
+      const first=wrap.querySelector('.rel-other-input');
+      (r.values&&r.values.length?r.values:['']).forEach((v,i)=>{
+        if(i===0&&first)first.value=v;else addOtherInput(wrap,v);
+      });
+    }else{
+      wrap.querySelector('.rel-name').value=r.name||'';
+      wrap.querySelector('.rel-url').value=r.url||'';
+      wrap.querySelector('.rel-theme').value=r.theme||'';
+      wrap.querySelector('.rel-year').value=r.year||'';
+      wrap.querySelector('.rel-track').value=r.track||'';
+    }
+  });
+}
+function loadPersistedExtraVideos(){
+  let saved=[];
+  try{saved=JSON.parse(localStorage.getItem('bloggerGen_extraVideos')||'[]')}catch(e){saved=[]}
+  saved.forEach(v=>addVideoItem(v.title||'',v.url||''));
+}
+
 try{$('moreBreak').value=localStorage.getItem('bloggerGen_moreBreak')==='after'?'after':'before'}catch(e){}
 $('moreBreak').addEventListener('change',()=>{
   try{localStorage.setItem('bloggerGen_moreBreak',$('moreBreak').value)}catch(e){}
   scheduleLiveGenerate();
 });
+loadPersistedRelations();
+loadPersistedExtraVideos();
 setTimeout(gen,0);
 $('addVideo').addEventListener('click',()=>{
   addVideoItem();
+  persistLists();
   scheduleLiveGenerate();
 });
 $('addRelation').addEventListener('click',()=>{
   addRelationItem();
+  persistLists();
   scheduleLiveGenerate();
 });
 
@@ -1605,10 +1675,10 @@ ids.forEach(id=>{
 });
 
 document.addEventListener('input',e=>{
-  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-item input')) scheduleLiveGenerate();
+  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-item input')){persistLists();scheduleLiveGenerate();}
 });
 document.addEventListener('change',e=>{
-  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-item input,.rel-item select')) scheduleLiveGenerate();
+  if(e.target.matches('.extra-video-title,.extra-video-url,.rel-item input,.rel-item select')){persistLists();scheduleLiveGenerate();}
 });
 
 // Wrap-lines toggle for the generated HTML preview.
@@ -1689,6 +1759,8 @@ $('clear').addEventListener('click',()=>{
   });
   $('imgHeight').value=320;
   $('relationList').innerHTML='';
+  $('extraVideos').innerHTML='';
+  try{localStorage.removeItem('bloggerGen_relations');localStorage.removeItem('bloggerGen_extraVideos')}catch(e){}
   setNotesEnabled(false);
   setUpdateEnabled(false);
   setUpdateCustomEnabled(false);
