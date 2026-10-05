@@ -669,17 +669,23 @@ function selectedSplitLangs(){
 function updateSplitInfo(){
   const raw=$('splitSource').value;
   const n=selectedSplitLangs().length;
-  let msg='';
+  let msg='',cls='';
   if(!raw.trim())msg='';
-  else if(!n)msg='Tick at least one language.';
+  else if(!n){msg='Tick at least one language.';cls='bad';}
   else{
     const r=parseRearranged(raw,n);
-    if(!r.rows)msg='No lyric lines found.';
-    else if(n===1)msg='Found '+r.rows+' lines'+(r.stanzas?' and '+r.stanzas+' stanza break'+(r.stanzas===1?'':'s'):'')+'.';
-    else if(!r.bad)msg='Looks good: '+r.rows+' line groups across '+n+' languages'+(r.stanzas?', '+r.stanzas+' stanza break'+(r.stanzas===1?'':'s'):'')+'.';
-    else msg='Warning: '+r.bad+' line group'+(r.bad===1?' does':'s do')+' not have exactly '+n+' lines (most common size: '+r.common+'). Check which languages are ticked; unmatched rows will be padded with blank lines.';
+    if(!r.rows){msg='No lyric lines found.';cls='bad';}
+    else if(n===1){msg='Found '+r.rows+' lines'+(r.stanzas?' and '+r.stanzas+' stanza break'+(r.stanzas===1?'':'s'):'')+'.';cls='ok';}
+    else if(!r.bad){msg='Looks good: '+r.rows+' line groups across '+n+' languages'+(r.stanzas?', '+r.stanzas+' stanza break'+(r.stanzas===1?'':'s'):'')+'.';cls='ok';}
+    else{msg='Warning: '+r.bad+' line group'+(r.bad===1?' does':'s do')+' not have exactly '+n+' lines (most common size: '+r.common+'). Check which languages are ticked; unmatched rows will be padded with blank lines.';cls='warn';}
   }
-  $('splitInfo').textContent=msg;
+  const el=$('splitInfo');
+  el.textContent='';
+  if(!msg)return;
+  const sp=document.createElement('span');
+  sp.className='info-'+cls;
+  sp.textContent=msg;
+  el.appendChild(sp);
 }
 // After loading new source text, tick as many languages as there are lines per
 // group. Prefer the boxes that currently hold text if that matches the count.
