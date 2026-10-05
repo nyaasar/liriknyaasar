@@ -63,6 +63,31 @@ h1{margin:0 0 6px}p.help{color:var(--muted);margin-top:0}
 .theme-label{font-size:.88rem;font-weight:700}
 html[data-ui-theme="dark"] .theme-toggle{background:#2b3037;border-color:#4a515b}
 html[data-ui-theme="dark"] .theme-icon{font-size:1rem}
+.to-top{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  z-index:50;
+  width:42px;height:42px;
+  padding:0;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);
+  border-radius:50%;
+  background:var(--panel-bg);
+  color:var(--text);
+  box-shadow:0 3px 10px #00000026;
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(8px);
+  transition:opacity .2s ease,transform .2s ease,visibility .2s,box-shadow .18s ease;
+}
+.to-top.show{opacity:1;visibility:visible;transform:none}
+.to-top:hover{filter:none;box-shadow:0 5px 14px #00000033}
+.to-top:focus-visible{outline:3px solid #8ab4f8;outline-offset:2px}
+.to-top svg{width:20px;height:20px;display:block}
+html[data-ui-theme="dark"] .to-top{background:#2b3037;border-color:#4a515b}
+@media(prefers-reduced-motion:reduce){.to-top{transition:none}}
 html[data-ui-theme="dark"] .panel{box-shadow:0 3px 14px #00000035}
 html[data-ui-theme="dark"] input::placeholder,
 html[data-ui-theme="dark"] textarea::placeholder{color:#777e89}
@@ -319,6 +344,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 </section>
 </div>
+<button type="button" id="backToTop" class="to-top" title="Back to top" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 <script>
 const $ = id => document.getElementById(id);
 const ids=['image','imgHeight','imgHrefCustom','updateDate','updateCustom','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes'];
@@ -1820,6 +1846,18 @@ document.querySelectorAll('.preview-theme').forEach(btn=>{
     $('status').textContent='Live Preview refreshed in '+previewTheme+' theme.';
   });
 });
+// Floating "back to top" button: appears after scrolling down a bit.
+(function(){
+  const btn=$('backToTop');
+  if(!btn)return;
+  const update=()=>btn.classList.toggle('show',window.scrollY>400);
+  window.addEventListener('scroll',update,{passive:true});
+  btn.addEventListener('click',()=>{
+    const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+  });
+  update();
+})();
 </script>
 </body>
 </html>
