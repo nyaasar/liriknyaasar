@@ -1402,8 +1402,10 @@ function divLines(text,tab,cls=''){
   return text.map(line=>line.trim()===''?'<div id="'+tab+'"><br /></div>':'<div'+c+' id="'+tab+'">'+esc(line)+'</div>').join('');
 }
 function combined(){
-  const a=lines('kanji'),b=lines('romaji'),c=lines('translation');
-  const d=$('idns').value.trim()?lines('idns'):[];
+  // An empty box is not a lyric track at all. (lines() of an empty box is [''], which used to
+  // leave one stray blank <div id="tab1"><br /></div> on the first row.)
+  const track=id=>$(id).value.trim()?lines(id):[];
+  const a=track('kanji'),b=track('romaji'),c=track('translation'),d=track('idns');
   const max=Math.max(a.length,b.length,c.length,d.length);
   let out='',pendingSeparator=false,lastWasBreak=false;
   for(let i=0;i<max;i++){
