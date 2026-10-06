@@ -153,16 +153,38 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .field-label-row label{margin-bottom:0}
 .paste-btn,.mini-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
 .notes-toggle{margin:0}.notes-toggle input{width:auto}
-.palette-swatches{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px;max-width:260px}
+.header-controls{position:relative}
+.theme-menu{position:relative}
+.theme-caret{font-size:.8rem;line-height:1;opacity:.75;transition:transform .18s ease}
+.theme-toggle[aria-expanded="true"] .theme-caret{transform:rotate(180deg)}
+.theme-panel{
+  position:absolute;top:calc(100% + 8px);right:0;z-index:60;
+  width:300px;max-width:calc(100vw - 24px);
+  padding:14px;
+  background:var(--raised-bg);
+  border:1px solid var(--raised-border);
+  border-radius:12px;
+  box-shadow:0 8px 26px #00000033;
+}
+.theme-panel[hidden]{display:none}
+.theme-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.theme-section-title:not(:first-child){margin-top:14px}
+.theme-current{font-weight:650;letter-spacing:0;text-transform:none;color:var(--text)}
+.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mode-opt{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 10px;border:1px solid var(--border)}
+.mode-opt[aria-pressed="true"]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.mode-opt:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+@media(max-width:700px){.theme-menu{position:static}.theme-panel{left:0;right:0;width:auto;max-width:360px}}
+.palette-swatches{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px}
 .palette-swatches .swatch{
-  flex:0 0 auto;width:22px;height:22px;padding:0;border-radius:50%;
+  flex:0 0 auto;width:28px;height:28px;padding:0;border-radius:50%;
   border:1px solid var(--border);
   background:linear-gradient(135deg,var(--sw-a) 50%,var(--sw-b) 50%);
   box-shadow:0 1px 3px #0000001f;
 }
 html[data-ui-theme="dark"] .palette-swatches .swatch{background:linear-gradient(135deg,var(--sw-ad) 50%,var(--sw-bd) 50%)}
 .palette-swatches .swatch:hover{filter:none;transform:scale(1.12)}
-.palette-swatches .swatch[aria-checked="true"]{box-shadow:0 0 0 2px var(--page-bg),0 0 0 4px var(--accent)}
+.palette-swatches .swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--panel-bg),0 0 0 4px var(--accent)}
 .palette-swatches .swatch:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .header-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;flex:0 0 auto}
 .mode-switch{position:relative;display:inline-flex;align-items:center;gap:9px;margin:0;padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--panel-bg);color:var(--text);font-size:.88rem;font-weight:700;cursor:pointer;user-select:none;box-shadow:0 2px 7px #00000012}
@@ -211,7 +233,7 @@ html[data-ui-theme="dark"] .tok-value{color:#8ee08e}
 .rel-other-row button{flex:0 0 auto;padding:8px 13px}
 details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
-@media(max-width:700px){.app-header{flex-direction:column}.header-controls{justify-content:flex-start}.palette-swatches{justify-content:flex-start}}
+@media(max-width:700px){.app-header{flex-direction:column}.header-controls{justify-content:flex-start}}
 @media(max-width:560px){
   .extra-video-item{grid-template-columns:1fr!important}
   body{padding:12px}
@@ -234,25 +256,36 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
       <span class="track" aria-hidden="true"></span>
       <span>Re-arranger mode</span>
     </label>
-    <div class="palette-swatches" id="paletteSwatches" role="radiogroup" aria-label="Colour palette">
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="default" title="Default" aria-label="Default palette" style="--sw-a:#1967d2;--sw-b:#f4f6f8;--sw-ad:#1967d2;--sw-bd:#17191c"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="rose" title="Rose" aria-label="Rose palette" style="--sw-a:#c2456b;--sw-b:#fbeff2;--sw-ad:#f48fb1;--sw-bd:#1e1519"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="mint" title="Mint" aria-label="Mint palette" style="--sw-a:#1a7f52;--sw-b:#eef7f2;--sw-ad:#6fd3a1;--sw-bd:#121a16"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="lavender" title="Lavender" aria-label="Lavender palette" style="--sw-a:#6b4fc4;--sw-b:#f3f0fa;--sw-ad:#b79cff;--sw-bd:#17141f"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="sepia" title="Sepia" aria-label="Sepia palette" style="--sw-a:#8a5a1f;--sw-b:#f4ecd8;--sw-ad:#e0b36a;--sw-bd:#1c1812"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="amber" title="Amber" aria-label="Amber palette" style="--sw-a:#b45f06;--sw-b:#fdf3e1;--sw-ad:#ffb938;--sw-bd:#1b1508"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="coffee" title="Coffee" aria-label="Coffee palette" style="--sw-a:#6f4130;--sw-b:#efe6df;--sw-ad:#d2a285;--sw-bd:#17110e"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="ocean" title="Ocean" aria-label="Ocean palette" style="--sw-a:#0b6bb5;--sw-b:#eaf3fa;--sw-ad:#5cb6f5;--sw-bd:#0f1822"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="teal" title="Teal" aria-label="Teal palette" style="--sw-a:#0f7a75;--sw-b:#e8f5f4;--sw-ad:#4fd6cb;--sw-bd:#0e1918"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="slate" title="Slate" aria-label="Slate palette" style="--sw-a:#475a7a;--sw-b:#eceff3;--sw-ad:#9db4d9;--sw-bd:#14171c"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="purple" title="Purple" aria-label="Purple palette" style="--sw-a:#7c3aed;--sw-b:#f1eafc;--sw-ad:#b388ff;--sw-bd:#150d22"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="pink" title="Pink" aria-label="Pink palette" style="--sw-a:#c9137a;--sw-b:#fdecf5;--sw-ad:#ff6bb5;--sw-bd:#200c18"></button>
-      <button type="button" class="swatch" role="radio" aria-checked="false" data-palette="orange" title="Orange" aria-label="Orange palette" style="--sw-a:#c2410c;--sw-b:#fff0e5;--sw-ad:#ff8a3d;--sw-bd:#1f1008"></button>
+    <div class="theme-menu" id="themeMenu">
+      <button type="button" id="themeMenuBtn" class="theme-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenuPanel">
+        <span class="theme-icon" aria-hidden="true">☾</span>
+        <span class="theme-label">Theme Menu</span>
+        <span class="theme-caret" aria-hidden="true">▾</span>
+      </button>
+      <div class="theme-panel" id="themeMenuPanel" role="group" aria-label="Theme menu" hidden>
+        <div class="theme-section-title">Mode</div>
+        <div class="mode-options" id="modeOptions" role="group" aria-label="Light or dark mode">
+          <button type="button" class="mode-opt" data-mode="light" aria-pressed="false"><span aria-hidden="true">☀</span> Light</button>
+          <button type="button" class="mode-opt" data-mode="dark" aria-pressed="false"><span aria-hidden="true">☾</span> Dark</button>
+        </div>
+        <div class="theme-section-title">Accent palette <span class="theme-current" id="themeCurrent"></span></div>
+        <div class="palette-swatches" id="paletteSwatches" role="group" aria-label="Colour palette">
+          <button type="button" class="swatch" aria-pressed="false" data-palette="default" title="Default" aria-label="Default palette" style="--sw-a:#1967d2;--sw-b:#f4f6f8;--sw-ad:#1967d2;--sw-bd:#17191c"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="rose" title="Rose" aria-label="Rose palette" style="--sw-a:#c2456b;--sw-b:#fbeff2;--sw-ad:#f48fb1;--sw-bd:#1e1519"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="mint" title="Mint" aria-label="Mint palette" style="--sw-a:#1a7f52;--sw-b:#eef7f2;--sw-ad:#6fd3a1;--sw-bd:#121a16"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="lavender" title="Lavender" aria-label="Lavender palette" style="--sw-a:#6b4fc4;--sw-b:#f3f0fa;--sw-ad:#b79cff;--sw-bd:#17141f"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="sepia" title="Sepia" aria-label="Sepia palette" style="--sw-a:#8a5a1f;--sw-b:#f4ecd8;--sw-ad:#e0b36a;--sw-bd:#1c1812"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="amber" title="Amber" aria-label="Amber palette" style="--sw-a:#b45f06;--sw-b:#fdf3e1;--sw-ad:#ffb938;--sw-bd:#1b1508"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="coffee" title="Coffee" aria-label="Coffee palette" style="--sw-a:#6f4130;--sw-b:#efe6df;--sw-ad:#d2a285;--sw-bd:#17110e"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="ocean" title="Ocean" aria-label="Ocean palette" style="--sw-a:#0b6bb5;--sw-b:#eaf3fa;--sw-ad:#5cb6f5;--sw-bd:#0f1822"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="teal" title="Teal" aria-label="Teal palette" style="--sw-a:#0f7a75;--sw-b:#e8f5f4;--sw-ad:#4fd6cb;--sw-bd:#0e1918"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="slate" title="Slate" aria-label="Slate palette" style="--sw-a:#475a7a;--sw-b:#eceff3;--sw-ad:#9db4d9;--sw-bd:#14171c"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="purple" title="Purple" aria-label="Purple palette" style="--sw-a:#7c3aed;--sw-b:#f1eafc;--sw-ad:#b388ff;--sw-bd:#150d22"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="pink" title="Pink" aria-label="Pink palette" style="--sw-a:#c9137a;--sw-b:#fdecf5;--sw-ad:#ff6bb5;--sw-bd:#200c18"></button>
+          <button type="button" class="swatch" aria-pressed="false" data-palette="orange" title="Orange" aria-label="Orange palette" style="--sw-a:#c2410c;--sw-b:#fff0e5;--sw-ad:#ff8a3d;--sw-bd:#1f1008"></button>
+        </div>
+      </div>
     </div>
-    <button type="button" id="toggleDarkMode" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">
-      <span class="theme-icon" aria-hidden="true">☾</span>
-      <span class="theme-label">Dark</span>
-    </button>
   </div>
 </header>
 <div class="layout">
@@ -416,16 +449,12 @@ try{uiTheme=localStorage.getItem('bloggerGen_uiTheme')||'light';}catch(e){}
 function setUiTheme(theme){
   uiTheme=theme==='dark'?'dark':'light';
   document.documentElement.dataset.uiTheme=uiTheme;
-  const btn=$('toggleDarkMode');
-  if(btn){
-    const dark=uiTheme==='dark';
-    btn.setAttribute('aria-pressed',String(dark));
-    btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
-    const icon=btn.querySelector('.theme-icon');
-    const label=btn.querySelector('.theme-label');
-    if(icon)icon.textContent=dark?'☀':'☾';
-    if(label)label.textContent=dark?'Light':'Dark';
-  }
+  const dark=uiTheme==='dark';
+  const icon=document.querySelector('#themeMenuBtn .theme-icon');
+  if(icon)icon.textContent=dark?'☾':'☀';
+  document.querySelectorAll('#modeOptions .mode-opt').forEach(b=>{
+    b.setAttribute('aria-pressed',String(b.dataset.mode===uiTheme));
+  });
   try{localStorage.setItem('bloggerGen_uiTheme',uiTheme)}catch(e){}
 }
 setUiTheme(uiTheme);
@@ -438,7 +467,9 @@ function setPalette(name){
   if(!sw.some(b=>b.dataset.palette===name))name='default';
   if(name==='default')delete document.documentElement.dataset.palette;
   else document.documentElement.dataset.palette=name;
-  sw.forEach(b=>b.setAttribute('aria-checked',String(b.dataset.palette===name)));
+  sw.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.palette===name)));
+  const cur=sw.find(b=>b.dataset.palette===name);
+  if($('themeCurrent'))$('themeCurrent').textContent=cur?cur.title:'';
   try{localStorage.setItem('bloggerGen_palette',name)}catch(e){}
 }
 let palettePref='default';
@@ -449,9 +480,25 @@ $('paletteSwatches').addEventListener('click',e=>{
   if(b)setPalette(b.dataset.palette);
 });
 
-$('toggleDarkMode').addEventListener('click',()=>{
-  setUiTheme(uiTheme==='dark'?'light':'dark');
-});
+// Theme Menu: a popover holding the Light/Dark choice and the palette swatches.
+(function(){
+  const btn=$('themeMenuBtn'),panel=$('themeMenuPanel');
+  const setOpen=open=>{
+    panel.hidden=!open;
+    btn.setAttribute('aria-expanded',String(open));
+  };
+  btn.addEventListener('click',()=>setOpen(panel.hidden));
+  $('modeOptions').addEventListener('click',e=>{
+    const b=e.target.closest('.mode-opt');
+    if(b)setUiTheme(b.dataset.mode);
+  });
+  document.addEventListener('click',e=>{
+    if(!panel.hidden && !$('themeMenu').contains(e.target))setOpen(false);
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && !panel.hidden){setOpen(false);btn.focus();}
+  });
+})();
 
 try{previewCss.value=localStorage.getItem('bloggerGen_previewCss') ?? '';}catch(e){}
 previewCss.addEventListener('input',()=>{
