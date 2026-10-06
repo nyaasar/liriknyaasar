@@ -331,7 +331,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <p class="hint">Add as many relations as needed and mix types freely. Pick Anime, Game, Album, or Others from each item's dropdown.</p>
 </div>
 <div class="full"><label for="moreBreak">Read More Break Position (&lt;!--more--&gt;)</label><select id="moreBreak"><option value="before">Before the table</option><option value="after">After the table</option></select></div>
-<div class="full"><label for="youtube">Main YouTube Video ID or URL</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
+<div class="full"><label for="youtube">Main YouTube Video ID or URL (or SoundCloud embed code)</label><input id="youtube" placeholder="7L1M7HLcpMw"></div>
 <div class="full">
 <div class="field-label-row">
   <label for="updateDate">Lyrics Update Notification</label>
@@ -388,7 +388,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 </div>
 <textarea id="notes" placeholder="Hibari; Sering dikenal dengan nama ..." style="display:none"></textarea>
 </div>
-<div class="full"><label>Additional YouTube Videos/Versions (Optional)</label><div id="extraVideos"></div><button type="button" id="addVideo">+ Add another video</button><p class="hint">Add as many covers, alternate versions, or streams as needed. Each item can have its own heading and video ID or URL.</p></div>
+<div class="full"><label>Additional YouTube/SoundCloud Videos/Versions (Optional)</label><div id="extraVideos"></div><button type="button" id="addVideo">+ Add another video</button><p class="hint">Add as many covers, alternate versions, or streams as needed. Each item can have its own heading and video ID or URL.</p></div>
 </div>
 </section>
 
@@ -1065,20 +1065,20 @@ function extractFromHtml(raw){
     vm=allFrames.find(f=>f.getAttribute('data-gen')!=='video-extra'&&(tabOuter?isBefore(f,tabOuter):/Stream YouTube/i.test(f.parentNode.textContent)))||null;
     vmG=!!vm;
   }
-  if(vm)data.youtube=videoId(vm.getAttribute('src')||'');
+  if(vm)data.youtube=mediaFieldValue(vm);
   track('Main video',!!vm,vmG);
   let extras=[],exG=false;
   let pendingTitle='';
   doc.querySelectorAll('[data-gen="video-extra-title"],[data-gen="video-extra"]').forEach(el=>{
     if(el.getAttribute('data-gen')==='video-extra-title'){pendingTitle=el.textContent.trim();return;}
-    extras.push({title:pendingTitle,id:videoId(el.getAttribute('src')||'')});
+    extras.push({title:pendingTitle,id:mediaFieldValue(el)});
     pendingTitle='';
   });
   if(!extras.length&&tabOuter){
     allFrames.filter(f=>f!==vm&&!isBefore(f,tabOuter)&&!tabOuter.contains(f)).forEach(f=>{
       const pv=f.previousElementSibling;
       const isTitle=pv&&pv.tagName==='SPAN'&&pv.querySelector('b')&&/font-size\s*:\s*large/i.test(pv.getAttribute('style')||'');
-      extras.push({title:isTitle?pv.textContent.trim():'',id:videoId(f.getAttribute('src')||'')});
+      extras.push({title:isTitle?pv.textContent.trim():'',id:mediaFieldValue(f)});
     });
     exG=extras.length>0;
   }
@@ -1391,6 +1391,100 @@ function videoId(v){
   const m=v.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|watch\?v=|shorts\/))([A-Za-z0-9_-]{6,})/);
   return m?m[1]:v.replace(/[?&].*$/,'').replace(/\/$/,'');
 }
+// --- Media (YouTube or SoundCloud) for the main / extra video fields -----------------------
+// A field may hold a YouTube ID/URL, a SoundCloud embed code (the <iframe> and, optionally, the
+// credit <div> under it), a SoundCloud player URL, or a plain soundcloud.com link.
+function decodeEntities(s){
+  return String(s).replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(m,e)=>{
+    e=e.toLowerCase();
+    if(e.charAt(0)==='#'){
+      const n=e.charAt(1)==='x'?parseInt(e.slice(2),16):parseInt(e.slice(1),10);
+      return n>0&&n<0x110000?String.fromCodePoint(n):m;
+    }
+    return {amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '}[e];
+  });
+}
+function tagAttrs(str){
+  const o={};
+  String(str).replace(/([a-zA-Z_:][\w:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g,(m,k,a,b,c)=>{
+    o[k.toLowerCase()]=decodeEntities(a!==undefined?a:(b!==undefined?b:(c||'')));
+    return m;
+  });
+  return o;
+}
+function cleanStyle(st){
+  st=String(st||'').replace(/[<>]/g,'').trim();
+  return /url\s*\(|expression|javascript:|@import/i.test(st)?'':st;
+}
+const SC_PLAYER_RE=/^https?:\/\/w\.soundcloud\.com\/player\/\?/i;
+const SC_PAGE_RE=/^https?:\/\/(?:www\.|m\.|on\.)?soundcloud\.com\/\S+$/i;
+// Rebuilds the credit line from the pasted one, keeping only safe parts (text, http(s) links, style).
+function buildScCredit(divAttrs,inner){
+  const style=cleanStyle(tagAttrs(divAttrs).style);
+  const text=t=>esc(decodeEntities(String(t).replace(/<[^>]*>/g,'')));
+  const re=/<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let out='',last=0,m;
+  while((m=re.exec(inner))!==null){
+    out+=text(inner.slice(last,m.index));
+    const a=tagAttrs(m[1]),label=text(m[2]);
+    if(/^https?:\/\//i.test(a.href||'')){
+      const st=cleanStyle(a.style);
+      out+='<a href="'+attr(a.href)+'"'+(a.title?' title="'+attr(a.title)+'"':'')+' target="_blank" rel="noopener"'+(st?' style="'+attr(st)+'"':'')+'>'+label+'</a>';
+    }else out+=label;
+    last=m.index+m[0].length;
+  }
+  out+=text(inner.slice(last));
+  return '<div data-gen="video-credit"'+(style?' style="'+attr(style)+'"':'')+'>'+out+'</div>';
+}
+function parseSoundCloud(v){
+  const raw=String(v).trim();
+  let src='',w='100%',h='166',credit='';
+  const ft=/<iframe\b([^>]*)>/i.exec(raw);
+  if(ft){
+    const a=tagAttrs(ft[1]);
+    src=(a.src||'').trim();
+    if(!SC_PLAYER_RE.test(src))return null;
+    if(/^\d{1,4}(%|px)?$/.test(a.width||''))w=a.width;
+    if(/^\d{2,4}$/.test(a.height||''))h=a.height;
+    // The credit is the first <div> after the iframe that links to soundcloud.com.
+    const after=raw.slice(ft.index+ft[0].length);
+    const dm=/<div\b([^>]*)>([\s\S]*?)<\/div>/i.exec(after);
+    if(dm&&/soundcloud\.com/i.test(dm[2]))credit=buildScCredit(dm[1],dm[2]);
+  }else if(SC_PLAYER_RE.test(raw)&&!/\s/.test(raw)){
+    src=raw;
+  }else if(SC_PAGE_RE.test(raw)){
+    src='https://w.soundcloud.com/player/?url='+encodeURIComponent(raw)+'&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true';
+  }else return null;
+  return {type:'soundcloud',src,w,h,credit};
+}
+// Returns {type:'youtube',id} / {type:'soundcloud',...} or null when the field is empty.
+function parseMedia(v){
+  v=(v||'').trim();
+  if(!v)return null;
+  if(/soundcloud\.com/i.test(v)){
+    const sc=parseSoundCloud(v);
+    if(sc)return sc;
+  }
+  const id=videoId(v);
+  return id?{type:'youtube',id}:null;
+}
+function mediaIframe(media,gen){
+  if(media.type==='soundcloud'){
+    return '<iframe data-gen="'+gen+'" width="'+attr(media.w)+'" height="'+attr(media.h)+'" scrolling="no" frameborder="no" allow="autoplay; encrypted-media" src="'+attr(media.src)+'"></iframe>'+(media.credit?'\n    '+media.credit:'');
+  }
+  return '<iframe data-gen="'+gen+'" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(media.id)+'" width="727"></iframe>';
+}
+// Extractor: what to put back into a video field for an iframe found in a post.
+function mediaFieldValue(f){
+  const src=f.getAttribute('src')||'';
+  if(SC_PLAYER_RE.test(src)){
+    let out='<iframe width="'+attr(f.getAttribute('width')||'100%')+'" height="'+attr(f.getAttribute('height')||'166')+'" scrolling="no" frameborder="no" allow="autoplay; encrypted-media" src="'+attr(src)+'"></iframe>';
+    const cr=f.nextElementSibling;
+    if(cr&&cr.getAttribute('data-gen')==='video-credit')out+=cr.outerHTML.replace(/ data-gen="video-credit"/,'');
+    return out;
+  }
+  return videoId(src);
+}
 function lines(id){return $(id).value.replace(/\r/g,'').split('\n');}
 // CSS class put on every singable lyric line (in the combined tab and the
 // singable tab) so it can be styled in the Blogger template, e.g. .lisingable{...}
@@ -1462,8 +1556,8 @@ function gen(){
   }
   const img=$('image').value.trim(), jp=$('titleJp').value, other=$('titleOther').value;
   const ih=Math.max(1,parseInt($('imgHeight').value,10)||320);
-  const main=videoId($('youtube').value);
-  const extras=[...document.querySelectorAll('.extra-video-item')].map(row=>({title:row.querySelector('.extra-video-title').value.trim(),id:videoId(row.querySelector('.extra-video-url').value)})).filter(v=>v.id);
+  const main=parseMedia($('youtube').value);
+  const extras=[...document.querySelectorAll('.extra-video-item')].map(row=>({title:row.querySelector('.extra-video-title').value.trim(),media:parseMedia(row.querySelector('.extra-video-url').value)})).filter(v=>v.media);
   const moreBefore=$('moreBreak').value!=='after';
   let h='<div class="separator" style="clear: both; text-align: center;" data-gen="post" data-gen-v="'+GEN_FORMAT_VERSION+'">\n';
   if(img){
@@ -1486,7 +1580,7 @@ function gen(){
   h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1" data-gen="artist-jp">'+esc($('artistJp').value)+'</span><span class="mdlktgri2" data-gen="artist">'+esc($('artist').value)+'</span>'):('<span class="mdlktgri1" data-gen="artist">'+esc($('artist').value)+'</span>'))+'</td>\n';
   const relation=relationHtml();
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
-  if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream YouTube</b><br />\n    <iframe data-gen="video-main" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(main)+'" width="727"></iframe>\n  </div>\n';
+  if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream '+(main.type==='soundcloud'?'SoundCloud':'YouTube')+'</b><br />\n    '+mediaIframe(main,'video-main')+'\n  </div>\n';
   const updText=buildUpdateNotice();
   const updDate=$('updateDate').value;
   const updAttr=idDate(updDate)?' data-date="'+attr(updDate)+'"':'';
@@ -1500,7 +1594,7 @@ function gen(){
     extras.forEach(v=>{
       h+='    <br /><br /><br />\n';
       if(v.title)h+='    <span data-gen="video-extra-title" style="font-family: inherit; font-size: large;"><b>'+esc(v.title)+'</b><br /></span>\n';
-      h+='    <iframe data-gen="video-extra" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="409" src="https://www.youtube.com/embed/'+attr(v.id)+'" width="727"></iframe>\n';
+      h+='    '+mediaIframe(v.media,'video-extra')+'\n';
     });
     if(extras.length)h+='  </div>\n';
     h+='  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
@@ -1713,7 +1807,7 @@ function addVideoItem(title='',url=''){
   const wrap=document.createElement('div');
   wrap.className='extra-video-item';
   wrap.style.cssText='display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel-bg)';
-  wrap.innerHTML='<div><label>Video heading</label><input class="extra-video-title" placeholder="e.g. Hanatan Cover"></div><div><label>YouTube video ID or URL</label><input class="extra-video-url" placeholder="Video ID or URL"></div><button type="button" class="remove-video">Remove</button>';
+  wrap.innerHTML='<div><label>Video heading</label><input class="extra-video-title" placeholder="e.g. Hanatan Cover"></div><div><label>YouTube video ID/URL or SoundCloud embed code</label><input class="extra-video-url" placeholder="Video ID, URL or embed code"></div><button type="button" class="remove-video">Remove</button>';
   wrap.querySelector('.extra-video-title').value=title;
   wrap.querySelector('.extra-video-url').value=url;
   wrap.querySelector('.remove-video').addEventListener('click',()=>{
