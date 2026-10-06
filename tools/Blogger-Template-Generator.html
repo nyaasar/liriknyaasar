@@ -1432,6 +1432,27 @@ function combined(){
 function tabBody(tab,id){
   return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'" data-gen="lyrics-'+id+'">'+divLines(lines(id),tab)+'</div>';
 }
+// A tab (its button and its body) is only generated when its lyrics box has text.
+// The combined "#" tab (tab1) is always kept.
+function tabNavHtml(){
+  const li=(tab,label)=>'<li><a href="#'+tab+'">'+label+'</a></li>';
+  const has=id=>$(id).value.trim()!=='';
+  let h=li('tab1','#');
+  if(has('kanji'))h+=li('tab2','Kanji');
+  if(has('romaji'))h+=li('tab3','Romaji');
+  if(has('translation'))h+=li('tab4','Indonesia');
+  if(has('idns'))h+='\n      '+li('tab5','IDN (S)');
+  return h;
+}
+function tabBodiesHtml(){
+  const has=id=>$(id).value.trim()!=='';
+  const parts=['<div id="tab1">'+combined()+'</div>'];
+  if(has('kanji'))parts.push(tabBody('tab2','kanji'));
+  if(has('romaji'))parts.push('<div id="tab3" data-gen="lyrics-romaji">'+divLines(lines('romaji'),'tab3')+'</div>');
+  if(has('translation'))parts.push('<div id="tab4" data-gen="lyrics-translation">'+divLines(lines('translation'),'tab4')+'</div>');
+  if(has('idns'))parts.push('<div id="tab5" data-gen="lyrics-singable">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>');
+  return parts.join('\n      ');
+}
 function gen(){
   if(rearrangeMode){
     if(!manuallyEdited)$('output').value=rearrangedLyrics();
@@ -1469,7 +1490,7 @@ function gen(){
   const updText=buildUpdateNotice();
   const updDate=$('updateDate').value;
   const updAttr=idDate(updDate)?' data-date="'+attr(updDate)+'"':'';
-  h+=(updText?'  <br />\n  <span data-gen="update"'+updAttr+'>'+updText+'</span><br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      <li><a href="#tab1">#</a></li><li><a href="#tab2">Kanji</a></li><li><a href="#tab3">Romaji</a></li><li><a href="#tab4">Indonesia</a></li>\n      '+($('idns').value.trim()?'<li><a href="#tab5">IDN (S)</a></li>':'')+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      <div id="tab1">'+combined()+'</div>\n      '+tabBody('tab2','kanji')+'\n      <div id="tab3" data-gen="lyrics-romaji">'+divLines(lines('romaji'),'tab3')+'</div>\n      <div id="tab4" data-gen="lyrics-translation">'+divLines(lines('translation'),'tab4')+'</div>\n      '+($('idns').value.trim()?'<div id="tab5" data-gen="lyrics-singable">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>':'')+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
+  h+=(updText?'  <br />\n  <span data-gen="update"'+updAttr+'>'+updText+'</span><br />\n  <br />\n':'  <br />\n  <br />\n  <br />\n')+'  <div id="tab-outer">\n    <ul id="tab-wrapper">\n      '+tabNavHtml()+'\n    </ul>\n    <div class="kontainer-tombol-penjajar" id="tombol-penjajar">\n      <button class="penjajar pen-kiri">&lt;</button><button class="penjajar pen-tengah active">=</button><button class="penjajar pen-kanan">&gt;</button>\n    </div>\n    <div class="lirikindo" id="tab-body">\n      '+tabBodiesHtml()+'\n    </div>\n  </div>\n  <br />\n  <br />\n  <br />\n  <hr />\n  <br />\n  <br />\n  <br />\n';
   const notesOn=$('notesEnabled').checked && $('notes').value.trim();
   if(notesOn || extras.length){
     if(notesOn)h+='  <div class="catatan-lirik" style="text-align: left;" data-gen="notes">\n    <span data-gen="notes-text">'+mdLinksInHtml($('notes').value.replace(/\r/g,'')).split('\n').map(x=>x.trim()?x:'<br />').join('\n    ')+'</span>\n  </div>\n';
