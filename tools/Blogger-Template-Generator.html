@@ -1034,7 +1034,7 @@ function extractFromHtml(raw){
     if(!REL_TYPES[type])type='other';
     if(type==='other'){
       if(!others){others={type:'other',values:[]};rels.push(others);}
-      others.values.push(el.textContent.trim());
+      others.values.push(textWithMdLinks(el));
       return;
     }
     const pick=k=>{const n=el.querySelector('[data-gen="rel-'+k+'"]');return n?n.textContent.trim():'';};
@@ -1335,6 +1335,25 @@ document.querySelectorAll('.paste-btn').forEach(btn=>{
 });
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function attr(s){return esc(s).replace(/'/g,'&#39;');}
+// Escapes text like esc(), but turns Markdown-style links [Text](https://...) into <a> tags.
+// Only http(s) links are accepted; everything else stays escaped plain text.
+function mdLinksToHtml(v){
+  const re=/\[([^\[\]]+)\]\(\s*(https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\s*\)/gi;
+  let out='',last=0,m;
+  while((m=re.exec(v))!==null){
+    out+=esc(v.slice(last,m.index))+'<a data-gen="rel-link" href="'+attr(m[2])+'" target="_blank" rel="noopener">'+esc(m[1])+'</a>';
+    last=m.index+m[0].length;
+  }
+  return out+esc(v.slice(last));
+}
+// Reverse of the above, for the extractor: <a href="U">T</a> inside an element becomes [T](U).
+function textWithMdLinks(el){
+  const c=el.cloneNode(true);
+  c.querySelectorAll('a[href]').forEach(a=>{
+    a.replaceWith(c.ownerDocument.createTextNode('['+a.textContent+']('+a.getAttribute('href')+')'));
+  });
+  return c.textContent.trim();
+}
 function urlSafe(s){return esc(s).replace(/"/g,'%22');}
 function videoId(v){
   v=(v||'').trim(); if(!v)return '';
@@ -1509,7 +1528,7 @@ const REL_TYPES={
 function addOtherInput(wrap,value=''){
   const row=document.createElement('div');
   row.className='rel-other-row';
-  row.innerHTML='<input class="rel-other-input" placeholder="Type anything..."><button type="button" class="remove-other" aria-label="Remove input">&times;</button>';
+  row.innerHTML='<input class="rel-other-input" placeholder="Type anything, or [Text](Link)..."><button type="button" class="remove-other" aria-label="Remove input">&times;</button>';
   row.querySelector('input').value=value;
   row.querySelector('.remove-other').addEventListener('click',()=>{
     row.remove();
@@ -1593,7 +1612,7 @@ function relationHtml(){
     if(t.kind==='other'){
       row.querySelectorAll('.rel-other-input').forEach(i=>{
         const v=i.value.trim();
-        if(v)lines.push(relOpen+esc(v)+'</span>');
+        if(v)lines.push(relOpen+mdLinksToHtml(v)+'</span>');
       });
     }else{
       const name=row.querySelector('.rel-name').value.trim();
