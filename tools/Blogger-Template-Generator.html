@@ -1801,6 +1801,20 @@ $('download').addEventListener('click',()=>{
   }
 });
 $('clear').addEventListener('click',()=>{
+  // In Re-arranger mode only the four lyrics boxes are cleared; every other
+  // field (title, artist, links, etc.) is left untouched.
+  if(rearrangeMode){
+    if(!confirm('Clear the four lyrics fields (and their saved values in this browser)?'))return;
+    ['kanji','romaji','translation','idns'].forEach(id=>{
+      $(id).value='';
+      try{localStorage.removeItem('bloggerGen_'+id)}catch(e){}
+    });
+    manuallyEdited=false;
+    $('regenerate').style.display='none';
+    gen();
+    $('status').textContent='Lyrics fields cleared.';
+    return;
+  }
   if(!confirm('Clear all generator fields and saved values in this browser?'))return;
   ids.forEach(id=>{
     $(id).value='';
