@@ -147,6 +147,7 @@ h2{font-size:1.15rem;margin:8px 0 14px}h3{font-size:1rem;margin:20px 0 10px}
 label{display:block;font-size:.88rem;font-weight:650;margin-bottom:5px}
 input,textarea,select{width:100%;font:inherit;padding:10px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--text)}
 textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-family:ui-monospace,monospace;font-size:.9rem}
+.line-count{margin-top:3px;font-size:.78rem;color:var(--muted);text-align:right}
 .full{grid-column:1/-1}.hint{font-size:.8rem;color:var(--muted);margin:5px 0 0}
 .hint .info-ok{color:var(--info-ok)}.hint .info-warn{color:var(--info-warn)}.hint .info-bad{color:var(--info-bad)}
 .field-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
@@ -372,10 +373,10 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div class="split-buttons"><button type="button" class="primary" id="splitRun">Split into boxes</button><button type="button" id="splitClear">Clear</button></div>
 </details>
 <div class="fields">
-<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><span class="split-actions"><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea></div>
-<div><div class="field-label-row"><label for="romaji">Romaji</label><span class="split-actions"><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button><button type="button" class="mini-btn" data-copy="romaji">Copy</button></span></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea></div>
-<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><span class="split-actions"><button type="button" class="paste-btn" data-target="translation">📋 Paste</button><button type="button" class="mini-btn" data-copy="translation">Copy</button></span></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea></div>
-<div><div class="field-label-row"><label for="idns">Singable (Optional)</label><span class="split-actions"><button type="button" class="paste-btn" data-target="idns">📋 Paste</button><button type="button" class="mini-btn" data-copy="idns">Copy</button></span></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea></div>
+<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><span class="split-actions"><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea><div class="line-count" id="count-kanji"></div></div>
+<div><div class="field-label-row"><label for="romaji">Romaji</label><span class="split-actions"><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button><button type="button" class="mini-btn" data-copy="romaji">Copy</button></span></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea><div class="line-count" id="count-romaji"></div></div>
+<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><span class="split-actions"><button type="button" class="paste-btn" data-target="translation">📋 Paste</button><button type="button" class="mini-btn" data-copy="translation">Copy</button></span></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea><div class="line-count" id="count-translation"></div></div>
+<div><div class="field-label-row"><label for="idns">Singable (Optional)</label><span class="split-actions"><button type="button" class="paste-btn" data-target="idns">📋 Paste</button><button type="button" class="mini-btn" data-copy="idns">Copy</button></span></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea><div class="line-count" id="count-idns"></div></div>
 </div>
 
 <h3 class="post-only">Optional Content</h3>
@@ -1345,6 +1346,26 @@ document.querySelectorAll('.paste-btn').forEach(btn=>{
     }
   });
 });
+// --- Line counters under the four lyric boxes ---
+// "Lines" are non-blank lines; blank lines (stanza gaps) are shown separately.
+// Trailing blank lines are ignored. The tooltip also gives the total row count,
+// which is what matters when the boxes are interleaved.
+function countLyricLines(text){
+  const rows=String(text||'').replace(/\r/g,'').split('\n');
+  while(rows.length&&rows[rows.length-1].trim()==='')rows.pop();
+  const lines=rows.filter(r=>r.trim()!=='').length;
+  return {total:rows.length,lines,blank:rows.length-lines};
+}
+function updateLineCount(id){
+  const el=$('count-'+id);
+  if(!el)return;
+  const c=countLyricLines($(id).value);
+  el.textContent=c.lines+(c.lines===1?' line':' lines')+(c.blank?' \u00b7 '+c.blank+' blank':'');
+  el.title=c.lines+' lyric line'+(c.lines===1?'':'s')+' + '+c.blank+' blank line'+(c.blank===1?'':'s')+' = '+c.total+' row'+(c.total===1?'':'s');
+}
+function updateLineCounts(){['kanji','romaji','translation','idns'].forEach(updateLineCount);}
+['kanji','romaji','translation','idns'].forEach(id=>$(id).addEventListener('input',()=>updateLineCount(id)));
+updateLineCounts();
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function attr(s){return esc(s).replace(/'/g,'&#39;');}
 // Title / tooltip / artist fields may contain line breaks typed as <br>, <br/> or
@@ -1567,6 +1588,7 @@ function tabBodiesHtml(){
   return parts.join('\n      ');
 }
 function gen(){
+  updateLineCounts();
   if(rearrangeMode){
     if(!manuallyEdited)$('output').value=rearrangedLyrics();
     renderHighlight();
@@ -2157,6 +2179,7 @@ $('clear').addEventListener('click',()=>{
   manuallyEdited=false;
   $('regenerate').style.display='none';
   $('output').value='';
+  updateLineCounts();
   renderHighlight();
   $('previewCss').value='';
   try{localStorage.removeItem('bloggerGen_previewCss')}catch(e){}
