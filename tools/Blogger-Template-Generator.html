@@ -153,6 +153,7 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .field-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
 .field-label-row label{margin-bottom:0}
 .paste-btn,.mini-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
+.kanji-label-input{width:auto;flex:0 1 180px;min-width:90px;padding:3px 8px;font-size:.88rem;font-weight:650;border-radius:6px}
 .notes-toggle{margin:0}.notes-toggle input{width:auto}
 .header-controls{position:relative}
 .theme-menu{position:relative}
@@ -373,7 +374,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <div class="split-buttons"><button type="button" class="primary" id="splitRun">Split into boxes</button><button type="button" id="splitClear">Clear</button></div>
 </details>
 <div class="fields">
-<div><div class="field-label-row"><label for="kanji">Kanji/Original Lyrics</label><span class="split-actions"><label class="wrap-toggle notes-toggle" for="kanjiLabelEnabled"><input type="checkbox" id="kanjiLabelEnabled">Rename tab</label><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><input id="kanjiLabel" placeholder="Kanji" maxlength="30" style="display:none;margin-bottom:6px"><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea><div class="line-count" id="count-kanji"></div></div>
+<div><div class="field-label-row"><label for="kanji" id="kanjiLabelText">Kanji/Original Lyrics</label><input id="kanjiLabel" class="kanji-label-input" placeholder="Kanji" maxlength="30" style="display:none"><span class="split-actions"><button type="button" class="mini-btn" id="kanjiLabelToggle" title="Rename this tab's label in the output" aria-label="Rename this tab's label in the output" aria-pressed="false">✏️</button><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea><div class="line-count" id="count-kanji"></div></div>
 <div><div class="field-label-row"><label for="romaji">Romaji</label><span class="split-actions"><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button><button type="button" class="mini-btn" data-copy="romaji">Copy</button></span></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea><div class="line-count" id="count-romaji"></div></div>
 <div><div class="field-label-row"><label for="translation">Indonesian Translation</label><span class="split-actions"><button type="button" class="paste-btn" data-target="translation">📋 Paste</button><button type="button" class="mini-btn" data-copy="translation">Copy</button></span></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea><div class="line-count" id="count-translation"></div></div>
 <div><div class="field-label-row"><label for="idns">Singable (Optional)</label><span class="split-actions"><button type="button" class="paste-btn" data-target="idns">📋 Paste</button><button type="button" class="mini-btn" data-copy="idns">Copy</button></span></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea><div class="line-count" id="count-idns"></div></div>
@@ -533,15 +534,18 @@ $('notesEnabled').addEventListener('change',()=>{
 // (falling back to "Kanji" again if left blank).
 function setKanjiLabelEnabled(on){
   const enabled=!!on;
-  $('kanjiLabelEnabled').checked=enabled;
+  $('kanjiLabelToggle').setAttribute('aria-pressed',String(enabled));
+  $('kanjiLabelText').style.display=enabled?'none':'';
   $('kanjiLabel').style.display=enabled?'':'none';
   try{localStorage.setItem('bloggerGen_kanjiLabelEnabled',enabled?'1':'0')}catch(e){}
 }
 let kanjiLabelEnabledPref=false;
 try{kanjiLabelEnabledPref=localStorage.getItem('bloggerGen_kanjiLabelEnabled')==='1';}catch(e){}
 setKanjiLabelEnabled(kanjiLabelEnabledPref);
-$('kanjiLabelEnabled').addEventListener('change',()=>{
-  setKanjiLabelEnabled($('kanjiLabelEnabled').checked);
+$('kanjiLabelToggle').addEventListener('click',()=>{
+  const next=$('kanjiLabelToggle').getAttribute('aria-pressed')!=='true';
+  setKanjiLabelEnabled(next);
+  if(next)$('kanjiLabel').focus();
   scheduleLiveGenerate();
 });
 
@@ -1599,7 +1603,7 @@ function tabBody(tab,id){
 // A tab (its button and its body) is only generated when its lyrics box has text.
 // The combined "#" tab (tab1) is always kept.
 function kanjiTabLabel(){
-  const custom=$('kanjiLabelEnabled').checked?$('kanjiLabel').value.trim():'';
+  const custom=$('kanjiLabelToggle').getAttribute('aria-pressed')==='true'?$('kanjiLabel').value.trim():'';
   return esc(custom||'Kanji');
 }
 function tabNavHtml(){
