@@ -248,7 +248,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <header class="app-header">
   <div>
     <h1>LirikNyaasar Template Generator</h1>
-    <p class="help">Paste your post data and lyrics, then generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Template-Generator.html">your browser.</a></p>
+    <p class="help">Generate Blogger-ready HTML. Everything runs in <a href="https://nyaasar.github.io/liriknyaasar/tools/Blogger-Template-Generator.html">your browser.</a></p>
   </div>
   <div class="header-controls">
     <label class="mode-switch" for="rearrangeMode" title="Output only the interleaved lyrics (Kanji, Romaji, Indonesian) instead of the full Blogger post">
@@ -682,15 +682,19 @@ $('rearrangeMode').addEventListener('change',()=>{
 // no gaps; with two or more, each line group (one line from every language) is
 // followed by a blank line. A blank row across every language marks a stanza
 // break and is collapsed into a single extra blank line.
-function rearrangedLyrics(){
-  const tracks=['kanji','romaji','translation','idns'].filter(id=>$(id).value.trim()!=='').map(lines);
-  if(!tracks.length)return '';
+// Builds the re-arranged rows as objects {t:text, mis:bool, why:string}. Rows belonging to a
+// line index where the filled boxes disagree (one blank while another has text, or one box
+// ran out of lines) are marked mis; `issues` lists those indexes for the status line.
+const REARR_FIELDS=[['kanji','Kanji/Original'],['romaji','Romaji'],['translation','Translation'],['idns','Singable']];
+function buildRearranged(){
+  const rows=[],issues=[];
+  const act=REARR_FIELDS.filter(([id])=>$(id).value.trim()!=='').map(([id,label])=>({label,t:lines(id)}));
+  if(!act.length)return {rows,issues};
+  const tracks=act.map(a=>a.t);
   const max=Math.max(...tracks.map(t=>t.length));
   const gapEvery=tracks.length===1?0:1;
   const bullets=$('rearrangeBullets').checked;
-  // Build a list of output lines first ('' = blank line); the HTML or plain
-  // text rendering is applied at the very end.
-  const rows=[];
+  const add=(t,mis,why)=>rows.push({t,mis:!!mis,why:why||''});
   let rowsInStanza=0,pendingBreak=false;
   for(let i=0;i<max;i++){
     const vals=tracks.map(t=>t[i]).filter(v=>v!==undefined);
@@ -702,18 +706,58 @@ function rearrangedLyrics(){
     if(pendingBreak && rows.length){
       if(bullets){
         // blank line, bullet, blank line (same shape as the template's combined tab)
-        if(rows[rows.length-1]!=='')rows.push('');
-        rows.push('\u2022','');
-      }else rows.push('');
+        if(rows[rows.length-1].t!=='')add('');
+        add('\u2022');add('');
+      }else add('');
     }
     pendingBreak=false;    // trailing/leading stanza breaks are dropped
-    vals.forEach(v=>rows.push(v.trim()===''?'':v));
+    let why='';
+    if(act.length>1 && vals.some(v=>v.trim()!=='')){
+      const blanks=act.filter(a=>a.t[i]!==undefined && a.t[i].trim()==='').map(a=>a.label);
+      const ended=act.filter(a=>a.t[i]===undefined).map(a=>a.label);
+      const parts=[];
+      if(blanks.length)parts.push('blank in '+blanks.join(', '));
+      if(ended.length)parts.push('no line in '+ended.join(', '));
+      why=parts.join('; ');
+      if(why)issues.push({line:i+1,why});
+    }
+    vals.forEach(v=>add(v.trim()===''?'':v,!!why,why));
     rowsInStanza++;
-    if(gapEvery && rowsInStanza%gapEvery===0)rows.push('');
+    if(gapEvery && rowsInStanza%gapEvery===0)add('');
   }
-  while(rows.length && rows[rows.length-1]==='')rows.pop();
-  if($('rearrangePlain').checked)return rows.join('\n');
-  return rows.map(r=>(r===''?'':esc(r))+'<br />\n').join('');
+  while(rows.length && rows[rows.length-1].t==='')rows.pop();
+  return {rows,issues};
+}
+function rearrangedLyrics(){
+  const rows=buildRearranged().rows;
+  if(!rows.length)return '';
+  if($('rearrangePlain').checked)return rows.map(r=>r.t).join('\n');
+  return rows.map(r=>(r.t===''?'':esc(r.t))+'<br />\n').join('');
+}
+// Preview-only rendering: same rows, but misaligned ones are wrapped so they can be highlighted.
+function rearrangedPreviewHtml(rows,plain){
+  return rows.map(r=>{
+    const txt=r.t===''?'&nbsp;':esc(r.t);
+    if(r.mis)return '<div class="gen-misaligned" title="'+attr(r.why)+'">'+txt+'</div>';
+    if(plain)return '<div style="white-space:pre-wrap;min-height:1.2em">'+txt+'</div>';
+    return (r.t===''?'':esc(r.t))+'<br />\n';
+  }).join('');
+}
+// Status line: summarises misaligned rows (only while the output still mirrors the boxes).
+function updateAlignStatus(){
+  const st=$('status');
+  const issues=(rearrangeMode && !manuallyEdited)?buildRearranged().issues:[];
+  if(issues.length){
+    const shown=issues.slice(0,6).map(x=>x.line).join(', ')+(issues.length>6?', \u2026':'');
+    const sp=document.createElement('span');
+    sp.className='info-warn';
+    sp.setAttribute('data-align','1');
+    sp.textContent=issues.length+' misaligned line group'+(issues.length===1?'':'s')+' (box line '+shown+'). They are highlighted in the Live Preview.';
+    st.textContent='';
+    st.appendChild(sp);
+  }else if(st.querySelector('[data-align]')){
+    st.textContent='';
+  }
 }
 // "Copy Rendered": copies the lyrics as formatted text (like the Re-Arranger's
 // Copy Output), so it can be pasted straight into Blogger's Compose view.
@@ -1419,6 +1463,7 @@ function tabBody(tab,id){
   return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'" data-gen="lyrics-'+id+'">'+divLines(lines(id),tab)+'</div>';
 }
 function gen(){
+  updateAlignStatus();
   if(rearrangeMode){
     if(!manuallyEdited)$('output').value=rearrangedLyrics();
     renderHighlight();
@@ -1711,7 +1756,12 @@ function updatePreview(){
   if(!frame)return;
 
   let html=$('output').value||'';
-  if(isPlainOutput())html='<div style="white-space:pre-wrap">'+esc(html)+'</div>';
+  let marked=false;
+  if(rearrangeMode && !manuallyEdited){
+    const b=buildRearranged();
+    if(b.issues.length){html=rearrangedPreviewHtml(b.rows,isPlainOutput());marked=true;}
+  }
+  if(!marked && isPlainOutput())html='<div style="white-space:pre-wrap">'+esc(html)+'</div>';
   const parsed=extractBloggerCss($('previewCss')?.value||'');
   const themeVars=`<style>
     :root{
@@ -1768,6 +1818,7 @@ function updatePreview(){
     table{max-width:100%;border-collapse:collapse}
     .preview-empty{color:#777;text-align:center;padding:40px 12px}
     article{display:block}
+    .gen-misaligned{background:rgba(232,89,12,.2);box-shadow:inset 4px 0 0 #e8590c;padding-left:8px;margin-left:-8px;white-space:pre-wrap;min-height:1.2em}
   </style>`;
 
   // A minimal Blogger-like page context. This makes selectors such as
