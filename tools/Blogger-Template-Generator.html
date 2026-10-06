@@ -1015,25 +1015,25 @@ function extractFromHtml(raw){
   let tj=q('title-jp'),to=q('title-other'),tjG=false,toG=false;
   if(!tj){tj=spans.find(x=>x!==to)||null;tjG=!!tj;}
   if(!to){to=spans.find(x=>x!==tj)||null;toG=!!to;}
-  if(tj){data.titleJp=tj.textContent;data.titleTooltip=tj.getAttribute('title')||'';}
+  if(tj){data.titleJp=textWithBr(tj);data.titleTooltip=titleAttrWithBr(tj.getAttribute('title'));}
   else{
     const c=doc.querySelector('td.judul_lagu');
     const t1=c&&c.querySelector('.mdlktgri1'),t2=c&&c.querySelector('.mdlktgri2');
-    if(t1&&t1.textContent){data.titleJp=t1.textContent;data.titleTooltip=t2?t2.textContent:'';tjG=true;}
+    if(t1&&textWithBr(t1)){data.titleJp=textWithBr(t1);data.titleTooltip=t2?textWithBr(t2):'';tjG=true;}
   }
-  if(to){data.titleOther=to.textContent;data.titleOtherTooltip=to.getAttribute('title')||'';}
+  if(to){data.titleOther=textWithBr(to);data.titleOtherTooltip=titleAttrWithBr(to.getAttribute('title'));}
   track('Main title',data.titleJp!==undefined,tjG);
   track('Second title',!!to,toG);
   let aj=q('artist-jp'),ar=q('artist'),aG=false;
-  if(aj)data.artistJp=aj.textContent;
-  if(ar)data.artist=ar.textContent;
+  if(aj)data.artistJp=textWithBr(aj);
+  if(ar)data.artist=textWithBr(ar);
   if(!aj&&!ar){
     const cell=doc.querySelector('td.nama_artis');
     if(cell){
       const sp=cell.querySelectorAll('.mdlktgri1,.mdlktgri2');
-      if(sp.length>=2){data.artistJp=sp[0].textContent;data.artist=sp[1].textContent;aG=true;}
-      else if(sp.length===1){data.artist=sp[0].textContent;aG=true;}
-      else if(cell.textContent.trim()){data.artist=cell.textContent.trim();aG=true;}
+      if(sp.length>=2){data.artistJp=textWithBr(sp[0]);data.artist=textWithBr(sp[1]);aG=true;}
+      else if(sp.length===1){data.artist=textWithBr(sp[0]);aG=true;}
+      else if(textWithBr(cell).trim()){data.artist=textWithBr(cell).trim();aG=true;}
     }
   }
   track('Artist',data.artist!==undefined||data.artistJp!==undefined,aG);
@@ -1347,6 +1347,25 @@ document.querySelectorAll('.paste-btn').forEach(btn=>{
 });
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function attr(s){return esc(s).replace(/'/g,'&#39;');}
+// Title / tooltip / artist fields may contain line breaks typed as <br>, <br/> or
+// <br />. Everything else is still escaped; only the break itself is let through.
+const BR_RE=/<br\s*\/?>/gi;
+// Escaped text where a typed <br> becomes a real <br />.
+function escBr(s){return String(s??'').split(BR_RE).map(esc).join('<br />');}
+// Attribute value (e.g. title="...") where a typed <br> becomes a newline character,
+// which browsers show as a line break in the hover tooltip.
+function attrBr(s){return String(s??'').split(BR_RE).map(attr).join('&#10;');}
+// Reads element text back, keeping <br> elements as '<br />' (used by Extract).
+function textWithBr(el){
+  let out='';
+  el.childNodes.forEach(n=>{
+    if(n.nodeType===3)out+=n.nodeValue;
+    else if(n.nodeType===1)out+=n.tagName==='BR'?'<br />':textWithBr(n);
+  });
+  return out;
+}
+// Reads a title="..." attribute back: newline characters become '<br />'.
+function titleAttrWithBr(v){return String(v||'').replace(/\r\n|\r|\n/g,'<br />');}
 // Escapes text like esc(), but turns Markdown-style links [Text](https://...) into <a> tags.
 // Only http(s) links are accepted; everything else stays escaped plain text.
 function mdLinksToHtml(v){
@@ -1574,10 +1593,10 @@ function gen(){
     }
   }else h+='  <!-- Add your image URL in the generator to include the post image. -->\n';
   h+='  <div style="text-align: center;">\n';
-  if(jp)h+='    <span2 style="font-size: large;" title="'+attr($('titleTooltip').value)+'" data-gen="title-jp"><b>'+esc(jp)+'</b></span2><br />\n';
-  if(other)h+='    <span2 style="font-size: large;" title="'+attr($('titleOtherTooltip').value)+'" data-gen="title-other"><b>'+esc(other)+'</b></span2><br />\n';
-  h+='  </div>\n  <br />\n  <br />\n'+(moreBefore?'  <!--more-->\n':'')+'  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+esc(jp)+'</span><span class="mdlktgri2">'+esc($('titleTooltip').value)+'</span></td>\n';
-  h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1" data-gen="artist-jp">'+esc($('artistJp').value)+'</span><span class="mdlktgri2" data-gen="artist">'+esc($('artist').value)+'</span>'):('<span class="mdlktgri1" data-gen="artist">'+esc($('artist').value)+'</span>'))+'</td>\n';
+  if(jp)h+='    <span2 style="font-size: large;" title="'+attrBr($('titleTooltip').value)+'" data-gen="title-jp"><b>'+escBr(jp)+'</b></span2><br />\n';
+  if(other)h+='    <span2 style="font-size: large;" title="'+attrBr($('titleOtherTooltip').value)+'" data-gen="title-other"><b>'+escBr(other)+'</b></span2><br />\n';
+  h+='  </div>\n  <br />\n  <br />\n'+(moreBefore?'  <!--more-->\n':'')+'  <table class="tabelkategori">\n    <thead><tr><th class="kategori">Judul</th><th class="kategori">Artis</th><th class="kategori">Dalam</th></tr></thead>\n    <tbody><tr>\n      <td class="judul_lagu"><span class="mdlktgri1">'+escBr(jp)+'</span><span class="mdlktgri2">'+escBr($('titleTooltip').value)+'</span></td>\n';
+  h+='      <td class="nama_artis">'+($('artistJp').value?('<span class="mdlktgri1" data-gen="artist-jp">'+escBr($('artistJp').value)+'</span><span class="mdlktgri2" data-gen="artist">'+escBr($('artist').value)+'</span>'):('<span class="mdlktgri1" data-gen="artist">'+escBr($('artist').value)+'</span>'))+'</td>\n';
   const relation=relationHtml();
   h+='      <td class="termasuk_dalam"><span class="mdlktgri2">'+relation+'</span></td>\n    </tr></tbody>\n  </table>\n'+(moreBefore?'':'  <!--more-->\n')+'  <br />\n  <br />\n';
   if(main)h+='  <div><b style="font-family: inherit; font-size: large;">Stream '+(main.type==='soundcloud'?'SoundCloud':'YouTube')+'</b><br />\n    '+mediaIframe(main,'video-main')+'\n  </div>\n';
