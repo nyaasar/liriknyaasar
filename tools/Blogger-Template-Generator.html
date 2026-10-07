@@ -153,7 +153,8 @@ textarea{min-height:100px;resize:vertical}textarea.lyrics{min-height:190px;font-
 .field-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
 .field-label-row label{margin-bottom:0}
 .paste-btn,.mini-btn{flex:0 0 auto;padding:4px 10px;font-size:.76rem;font-weight:650;border-radius:6px}
-.kanji-label-input{width:auto;flex:0 1 180px;min-width:90px;padding:3px 8px;font-size:.88rem;font-weight:650;border-radius:6px}
+.tab-label-input{width:auto;flex:0 0 70px;min-width:70px;max-width:70px;padding:0;font-size:.88rem;font-weight:650;border-radius:6px}
+.lyrics-fields .paste-btn,.lyrics-fields .mini-btn{padding:4px 4px}
 .notes-toggle{margin:0}.notes-toggle input{width:auto}
 .header-controls{position:relative}
 .theme-menu{position:relative}
@@ -373,11 +374,11 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <p class="hint" id="splitInfo"></p>
 <div class="split-buttons"><button type="button" class="primary" id="splitRun">Split into boxes</button><button type="button" id="splitClear">Clear</button></div>
 </details>
-<div class="fields">
-<div><div class="field-label-row"><label for="kanji" id="kanjiLabelText">Kanji/Original Lyrics</label><input id="kanjiLabel" class="kanji-label-input" placeholder="Kanji" maxlength="30" style="display:none"><span class="split-actions"><button type="button" class="mini-btn" id="kanjiLabelToggle" title="Rename this tab's label in the output" aria-label="Rename this tab's label in the output" aria-pressed="false">✏️</button><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea><div class="line-count" id="count-kanji"></div></div>
-<div><div class="field-label-row"><label for="romaji">Romaji</label><span class="split-actions"><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button><button type="button" class="mini-btn" data-copy="romaji">Copy</button></span></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea><div class="line-count" id="count-romaji"></div></div>
-<div><div class="field-label-row"><label for="translation">Indonesian Translation</label><span class="split-actions"><button type="button" class="paste-btn" data-target="translation">📋 Paste</button><button type="button" class="mini-btn" data-copy="translation">Copy</button></span></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea><div class="line-count" id="count-translation"></div></div>
-<div><div class="field-label-row"><label for="idns">Singable (Optional)</label><span class="split-actions"><button type="button" class="paste-btn" data-target="idns">📋 Paste</button><button type="button" class="mini-btn" data-copy="idns">Copy</button></span></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea><div class="line-count" id="count-idns"></div></div>
+<div class="fields lyrics-fields">
+<div><div class="field-label-row"><label for="kanji" id="kanjiLabelText">Lyrics</label><input id="kanjiLabel" class="tab-label-input" placeholder="Kanji" maxlength="30" style="display:none"><span class="split-actions"><button type="button" class="mini-btn" id="kanjiLabelToggle" title="Rename this tab's label in the output" aria-label="Rename this tab's label in the output" aria-pressed="false">✏️</button><button type="button" class="paste-btn" data-target="kanji">📋 Paste</button><button type="button" class="mini-btn" data-copy="kanji">Copy</button></span></div><textarea id="kanji" class="lyrics" placeholder="Kanji lyrics ..."></textarea><div class="line-count" id="count-kanji"></div></div>
+<div><div class="field-label-row"><label for="romaji" id="romajiLabelText">Romaji</label><input id="romajiLabel" class="tab-label-input" placeholder="Romaji" maxlength="30" style="display:none"><span class="split-actions"><button type="button" class="mini-btn" id="romajiLabelToggle" title="Rename this tab's label in the output" aria-label="Rename this tab's label in the output" aria-pressed="false">✏️</button><button type="button" class="paste-btn" data-target="romaji">📋 Paste</button><button type="button" class="mini-btn" data-copy="romaji">Copy</button></span></div><textarea id="romaji" class="lyrics" placeholder="Transliterated lyrics ..."></textarea><div class="line-count" id="count-romaji"></div></div>
+<div><div class="field-label-row"><label for="translation" id="translationLabelText">Translation</label><input id="translationLabel" class="tab-label-input" placeholder="Indonesia" maxlength="30" style="display:none"><span class="split-actions"><button type="button" class="mini-btn" id="translationLabelToggle" title="Rename this tab's label in the output" aria-label="Rename this tab's label in the output" aria-pressed="false">✏️</button><button type="button" class="paste-btn" data-target="translation">📋 Paste</button><button type="button" class="mini-btn" data-copy="translation">Copy</button></span></div><textarea id="translation" class="lyrics" placeholder="Translated lyrics ..."></textarea><div class="line-count" id="count-translation"></div></div>
+<div><div class="field-label-row"><label for="idns" id="idnsLabelText">Singable</label><input id="idnsLabel" class="tab-label-input" placeholder="IDN (S)" maxlength="30" style="display:none"><span class="split-actions"><button type="button" class="mini-btn" id="idnsLabelToggle" title="Rename this tab's label in the output" aria-label="Rename this tab's label in the output" aria-pressed="false">✏️</button><button type="button" class="paste-btn" data-target="idns">📋 Paste</button><button type="button" class="mini-btn" data-copy="idns">Copy</button></span></div><textarea id="idns" class="lyrics" placeholder="Optional singable version ..."></textarea><div class="line-count" id="count-idns"></div></div>
 </div>
 
 <h3 class="post-only">Optional Content</h3>
@@ -441,7 +442,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:700}
 <button type="button" id="backToTop" class="to-top" title="Back to top" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 <script>
 const $ = id => document.getElementById(id);
-const ids=['image','imgHeight','imgHrefCustom','updateDate','updateCustom','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes','kanjiLabel'];
+const ids=['image','imgHeight','imgHrefCustom','updateDate','updateCustom','titleJp','titleOther','titleTooltip','titleOtherTooltip','artist','artistJp','youtube','kanji','romaji','translation','idns','notes','kanjiLabel','romajiLabel','translationLabel','idnsLabel'];
 // True once the user has typed directly into the output box; while true,
 // gen() (triggered by form-field edits) stops overwriting their edits.
 let manuallyEdited=false;
@@ -529,24 +530,29 @@ $('notesEnabled').addEventListener('change',()=>{
   scheduleLiveGenerate();
 });
 
-// The Kanji/Original Lyrics tab keeps its default "Kanji" label unless this
-// is explicitly enabled, in which case the custom text box's value is used
-// (falling back to "Kanji" again if left blank).
-function setKanjiLabelEnabled(on){
+// Each lyrics tab (Kanji/Romaji/Translation/Singable) keeps its default nav
+// label unless renaming is explicitly enabled for it via its pencil button,
+// in which case the custom text box's value is used (falling back to the
+// default again if left blank).
+const DEFAULT_TAB_LABELS={kanji:'Kanji',romaji:'Romaji',translation:'Indonesia',idns:'IDN (S)'};
+const TAB_LABEL_IDS=Object.keys(DEFAULT_TAB_LABELS);
+function setLabelEnabled(id,on){
   const enabled=!!on;
-  $('kanjiLabelToggle').setAttribute('aria-pressed',String(enabled));
-  $('kanjiLabelText').style.display=enabled?'none':'';
-  $('kanjiLabel').style.display=enabled?'':'none';
-  try{localStorage.setItem('bloggerGen_kanjiLabelEnabled',enabled?'1':'0')}catch(e){}
+  $(id+'LabelToggle').setAttribute('aria-pressed',String(enabled));
+  $(id+'LabelText').style.display=enabled?'none':'';
+  $(id+'Label').style.display=enabled?'':'none';
+  try{localStorage.setItem('bloggerGen_'+id+'LabelEnabled',enabled?'1':'0')}catch(e){}
 }
-let kanjiLabelEnabledPref=false;
-try{kanjiLabelEnabledPref=localStorage.getItem('bloggerGen_kanjiLabelEnabled')==='1';}catch(e){}
-setKanjiLabelEnabled(kanjiLabelEnabledPref);
-$('kanjiLabelToggle').addEventListener('click',()=>{
-  const next=$('kanjiLabelToggle').getAttribute('aria-pressed')!=='true';
-  setKanjiLabelEnabled(next);
-  if(next)$('kanjiLabel').focus();
-  scheduleLiveGenerate();
+TAB_LABEL_IDS.forEach(id=>{
+  let pref=false;
+  try{pref=localStorage.getItem('bloggerGen_'+id+'LabelEnabled')==='1';}catch(e){}
+  setLabelEnabled(id,pref);
+  $(id+'LabelToggle').addEventListener('click',()=>{
+    const next=$(id+'LabelToggle').getAttribute('aria-pressed')!=='true';
+    setLabelEnabled(id,next);
+    if(next)$(id+'Label').focus();
+    scheduleLiveGenerate();
+  });
 });
 
 // --- Lyrics update notification ("Terjemahan dimutakhirkan pada ...") ---
@@ -1178,12 +1184,14 @@ function extractFromHtml(raw){
     if(el)data[id]=Array.from(el.children).map(c=>c.textContent.trim()===''?'':c.textContent).join('\n');
     track(label,!!el,g);
   });
-  // The Kanji tab's nav label, if it was renamed away from the default "Kanji".
-  const tab2Link=doc.querySelector('#tab-wrapper a[href="#tab2"]');
-  if(tab2Link){
-    const lbl=tab2Link.textContent.trim();
-    if(lbl&&lbl!=='Kanji')data.kanjiLabel=lbl;
-  }
+  // Each tab's nav label, if it was renamed away from its default.
+  const TAB_BY_ID={kanji:'tab2',romaji:'tab3',translation:'tab4',idns:'tab5'};
+  Object.entries(TAB_BY_ID).forEach(([id,tab])=>{
+    const link=doc.querySelector('#tab-wrapper a[href="#'+tab+'"]');
+    if(!link)return;
+    const lbl=link.textContent.trim();
+    if(lbl&&lbl!==DEFAULT_TAB_LABELS[id])data[id+'Label']=lbl;
+  });
 
   // Read-more position: where the <!--more--> comment sits relative to the table
   const table=doc.querySelector('table.tabelkategori');
@@ -1206,7 +1214,7 @@ function resetPostForm(){
   $('extraVideos').innerHTML='';
   try{localStorage.removeItem('bloggerGen_relations');localStorage.removeItem('bloggerGen_extraVideos')}catch(e){}
   setNotesEnabled(false);
-  setKanjiLabelEnabled(false);
+  TAB_LABEL_IDS.forEach(id=>setLabelEnabled(id,false));
   setUpdateEnabled(false);
   setUpdateCustomEnabled(false);
   refreshUpdateHint();
@@ -1244,12 +1252,14 @@ function applyExtracted(data,reset){
     setNotesEnabled(true);
     putField('notes',data.notes);
   }
-  if(data.kanjiLabel!==undefined){
-    setKanjiLabelEnabled(true);
-    putField('kanjiLabel',data.kanjiLabel);
-  }else{
-    setKanjiLabelEnabled(false);
-  }
+  TAB_LABEL_IDS.forEach(id=>{
+    if(data[id+'Label']!==undefined){
+      setLabelEnabled(id,true);
+      putField(id+'Label',data[id+'Label']);
+    }else{
+      setLabelEnabled(id,false);
+    }
+  });
   if(data.relations){
     $('relationList').innerHTML='';
     data.relations.forEach(r=>{
@@ -1602,18 +1612,18 @@ function tabBody(tab,id){
 }
 // A tab (its button and its body) is only generated when its lyrics box has text.
 // The combined "#" tab (tab1) is always kept.
-function kanjiTabLabel(){
-  const custom=$('kanjiLabelToggle').getAttribute('aria-pressed')==='true'?$('kanjiLabel').value.trim():'';
-  return esc(custom||'Kanji');
+function tabLabelFor(id){
+  const custom=$(id+'LabelToggle').getAttribute('aria-pressed')==='true'?$(id+'Label').value.trim():'';
+  return esc(custom||DEFAULT_TAB_LABELS[id]);
 }
 function tabNavHtml(){
   const li=(tab,label)=>'<li><a href="#'+tab+'">'+label+'</a></li>';
   const has=id=>$(id).value.trim()!=='';
   let h=li('tab1','#');
-  if(has('kanji'))h+=li('tab2',kanjiTabLabel());
-  if(has('romaji'))h+=li('tab3','Romaji');
-  if(has('translation'))h+=li('tab4','Indonesia');
-  if(has('idns'))h+='\n      '+li('tab5','IDN (S)');
+  if(has('kanji'))h+=li('tab2',tabLabelFor('kanji'));
+  if(has('romaji'))h+=li('tab3',tabLabelFor('romaji'));
+  if(has('translation'))h+=li('tab4',tabLabelFor('translation'));
+  if(has('idns'))h+='\n      '+li('tab5',tabLabelFor('idns'));
   return h;
 }
 function tabBodiesHtml(){
@@ -2211,7 +2221,7 @@ $('clear').addEventListener('click',()=>{
   $('extraVideos').innerHTML='';
   try{localStorage.removeItem('bloggerGen_relations');localStorage.removeItem('bloggerGen_extraVideos')}catch(e){}
   setNotesEnabled(false);
-  setKanjiLabelEnabled(false);
+  TAB_LABEL_IDS.forEach(id=>setLabelEnabled(id,false));
   setUpdateEnabled(false);
   setUpdateCustomEnabled(false);
   refreshUpdateHint();
