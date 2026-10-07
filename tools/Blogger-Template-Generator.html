@@ -1178,7 +1178,7 @@ function extractFromHtml(raw){
   track('Notes',data.notes!==undefined,notesGuess);
 
   // Lyrics: each tab's line <div>s, blank lines being the <br /> ones
-  [['kanji','lyrics-kanji','Kanji lyrics','.likanji,#tab2'],['romaji','lyrics-romaji','Romaji lyrics','#tab3'],['translation','lyrics-translation','Indonesian lyrics','#tab4'],['idns','lyrics-singable','Singable lyrics','#tab5']].forEach(([id,m,label,sel])=>{
+  [['kanji','lyrics-kanji','Kanji lyrics','.likanji,#tab2'],['romaji','lyrics-romaji','Romaji lyrics','.liromaji,#tab3'],['translation','lyrics-translation','Indonesian lyrics','.litranslation,#tab4'],['idns','lyrics-singable','Singable lyrics','.lisingable,#tab5']].forEach(([id,m,label,sel])=>{
     let el=q(m),g=false;
     if(!el){el=doc.querySelector(sel);g=!!el;}
     if(el)data[id]=Array.from(el.children).map(c=>c.textContent.trim()===''?'':c.textContent).join('\n');
@@ -1573,12 +1573,20 @@ function lines(id){return $(id).value.replace(/\r/g,'').split('\n');}
 // CSS class put on every singable lyric line (in the combined tab and the
 // singable tab) so it can be styled in the Blogger template, e.g. .lisingable{...}
 const SINGABLE_CLASS='lisingable';
+// One class per lyric box (its dedicated tab's wrapper <div>), so each can be
+// styled individually in the Blogger template, e.g. .liromaji{...}
+const TRACK_CLASSES={kanji:'likanji',romaji:'liromaji',translation:'litranslation',idns:SINGABLE_CLASS};
+// The idns track's data-gen marker has always been "lyrics-singable" (not
+// "lyrics-idns"), and the extractor still looks for that name, so keep it.
+const DATA_GEN_MARKER={kanji:'lyrics-kanji',romaji:'lyrics-romaji',translation:'lyrics-translation',idns:'lyrics-singable'};
 // Version of the data-gen marker format written into generated posts.
 const GEN_FORMAT_VERSION=1;
 function divLines(text,tab,cls=''){
   const c=cls?' class="'+cls+'"':'';
   return text.map(line=>line.trim()===''?'<div id="'+tab+'"><br /></div>':'<div'+c+' id="'+tab+'">'+esc(line)+'</div>').join('');
 }
+// Order the four tracks appear in within the combined tab, matching a/b/c/d below.
+const TRACK_ORDER=['kanji','romaji','translation','idns'];
 function combined(){
   // An empty box is not a lyric track at all. (lines() of an empty box is [''], which used to
   // leave one stray blank <div id="tab1"><br /></div> on the first row.)
@@ -1600,7 +1608,7 @@ function combined(){
     }
     if(pendingSeparator)out+='<div id="tab1"><br /></div>';
     [a[i],b[i],c[i],d[i]].forEach((v,k)=>{
-      if(v!==undefined)out+=v.trim()===''?'<div id="tab1"><br /></div>':'<div'+(k===3?' class="'+SINGABLE_CLASS+'"':'')+' id="tab1">'+esc(v)+'</div>';
+      if(v!==undefined)out+=v.trim()===''?'<div id="tab1"><br /></div>':'<div class="'+TRACK_CLASSES[TRACK_ORDER[k]]+'" id="tab1">'+esc(v)+'</div>';
     });
     pendingSeparator=true;
     lastWasBreak=false;
@@ -1608,7 +1616,7 @@ function combined(){
   return out;
 }
 function tabBody(tab,id){
-  return '<div'+(tab==='tab2'?' class="likanji"':'')+' id="'+tab+'" data-gen="lyrics-'+id+'">'+divLines(lines(id),tab)+'</div>';
+  return '<div class="'+TRACK_CLASSES[id]+'" id="'+tab+'" data-gen="'+DATA_GEN_MARKER[id]+'">'+divLines(lines(id),tab,TRACK_CLASSES[id])+'</div>';
 }
 // A tab (its button and its body) is only generated when its lyrics box has text.
 // The combined "#" tab (tab1) is always kept.
@@ -1630,9 +1638,9 @@ function tabBodiesHtml(){
   const has=id=>$(id).value.trim()!=='';
   const parts=['<div id="tab1">'+combined()+'</div>'];
   if(has('kanji'))parts.push(tabBody('tab2','kanji'));
-  if(has('romaji'))parts.push('<div id="tab3" data-gen="lyrics-romaji">'+divLines(lines('romaji'),'tab3')+'</div>');
-  if(has('translation'))parts.push('<div id="tab4" data-gen="lyrics-translation">'+divLines(lines('translation'),'tab4')+'</div>');
-  if(has('idns'))parts.push('<div id="tab5" data-gen="lyrics-singable">'+divLines(lines('idns'),'tab5',SINGABLE_CLASS)+'</div>');
+  if(has('romaji'))parts.push(tabBody('tab3','romaji'));
+  if(has('translation'))parts.push(tabBody('tab4','translation'));
+  if(has('idns'))parts.push(tabBody('tab5','idns'));
   return parts.join('\n      ');
 }
 function gen(){
