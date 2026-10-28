@@ -61,6 +61,8 @@ details.mod .mg .row{margin-top:0}
 button.ic{padding:0;width:26px;height:26px;line-height:1;border-radius:6px;font-size:1rem;color:var(--muted)}
 button.ic:hover{color:var(--ink)}
 .hidden{display:none}
+details.panel>summary{cursor:pointer;font-weight:600;font-size:1rem}
+details.panel[open]>summary{margin-bottom:12px}
 #hres{white-space:pre-line}
 </style>
 </head>
@@ -96,8 +98,8 @@ button.ic:hover{color:var(--ink)}
     </div>
   </section>
 
-  <section class="panel">
-    <h2>Hearing test</h2>
+  <details class="panel" id="hdet">
+    <summary>Hearing test</summary>
     <p class="note" style="margin-bottom:12px">A slow 40-second sweep. Start with a low volume and keep it unchanged. Press the button the moment the tone fades out of your hearing. This is a rough check, not a medical test, and speakers and headphones change the result.</p>
     <div class="row">
       <label>Range<select id="hrange"><option value="high">High: 1 kHz up to 20 kHz</option><option value="low">Low: 200 Hz down to 20 Hz</option></select></label>
@@ -108,7 +110,7 @@ button.ic:hover{color:var(--ink)}
     </div>
     <p class="note" id="hnow" style="margin-top:12px"></p>
     <p class="note" id="hres"></p>
-  </section>
+  </details>
 
   <section class="panel">
     <h2>Export</h2>
